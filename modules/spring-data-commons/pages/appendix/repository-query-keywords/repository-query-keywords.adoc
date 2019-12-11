@@ -1,0 +1,3 @@
+include::page$attributes.adoc[]
+[appendix]
+= Repository query keywords
