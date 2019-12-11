@@ -1,4 +1,4 @@
-* xref:reference-documentation.adoc[Reference Documentation]
+* xref:reference-documentation.adoc[Documentation]
 ** xref:dependencies/dependencies.adoc[Dependencies]
 *** xref:dependencies/dependencies.spring-boot.adoc[Dependency Management With Spring Boot]
 *** xref:dependencies/dependencies.spring-framework.adoc[Spring Framework]
