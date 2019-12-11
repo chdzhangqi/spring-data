@@ -1,0 +1,3 @@
+include::page$attributes.adoc[]
+[[repository-query-return-types]]
+= Repository query return types

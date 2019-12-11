@@ -1,0 +1,4 @@
+include::page$attributes.adoc[]
+[[query-by-example]]
+= Query by Example
+

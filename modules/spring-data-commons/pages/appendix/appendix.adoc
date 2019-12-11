@@ -1,0 +1,10 @@
+include::page$attributes.adoc[]
+[[appendix]]
+= Appendix
+
+:numbered!:
+[[repositories.namespace-reference]]
+[[populator.namespace-reference]]
+[[repository-query-keywords]]
+[appendix]
+:leveloffset: -1

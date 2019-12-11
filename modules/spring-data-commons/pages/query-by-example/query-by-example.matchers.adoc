@@ -1,0 +1,82 @@
+include::page$attributes.adoc[]
+[[query-by-example.matchers]]
+== Example Matchers
+
+Examples are not limited to default settings. You can specify your own defaults for string matching, null handling, and property-specific settings by using the `ExampleMatcher`, as shown in the following example:
+
+.Example matcher with customized matching
+====
+[source,java]
+----
+Person person = new Person();                          <1>
+person.setFirstname("Dave");                           <2>
+
+ExampleMatcher matcher = ExampleMatcher.matching()     <3>
+  .withIgnorePaths("lastname")                         <4>
+  .withIncludeNullValues()                             <5>
+  .withStringMatcherEnding();                          <6>
+
+Example<Person> example = Example.of(person, matcher); <7>
+
+----
+<1> Create a new instance of the domain object.
+<2> Set properties.
+<3> Create an `ExampleMatcher` to expect all values to match. It is usable at this stage even without further configuration.
+<4> Construct a new `ExampleMatcher` to ignore the `lastname` property path.
+<5> Construct a new `ExampleMatcher` to ignore the `lastname` property path and to include null values.
+<6> Construct a new `ExampleMatcher` to ignore the `lastname` property path, to include null values, and to perform suffix string matching.
+<7> Create a new `Example` based on the domain object and the configured `ExampleMatcher`.
+====
+
+By default, the `ExampleMatcher` expects all values set on the probe to match. If you want to get results matching any of the predicates defined implicitly, use `ExampleMatcher.matchingAny()`.
+
+You can specify behavior for individual properties (such as "firstname" and "lastname" or, for nested properties, "address.city"). You can tune it with matching options and case sensitivity, as shown in the following example:
+
+.Configuring matcher options
+====
+[source,java]
+----
+ExampleMatcher matcher = ExampleMatcher.matching()
+  .withMatcher("firstname", endsWith())
+  .withMatcher("lastname", startsWith().ignoreCase());
+}
+----
+====
+
+Another way to configure matcher options is to use lambdas (introduced in Java 8). This approach creates a callback that asks the implementor to modify the matcher. You need not return the matcher, because configuration options are held within the matcher instance. The following example shows a matcher that uses lambdas:
+
+.Configuring matcher options with lambdas
+====
+[source,java]
+----
+ExampleMatcher matcher = ExampleMatcher.matching()
+  .withMatcher("firstname", match -> match.endsWith())
+  .withMatcher("firstname", match -> match.startsWith());
+}
+----
+====
+
+Queries created by `Example` use a merged view of the configuration. Default matching settings can be set at the `ExampleMatcher` level, while individual settings can be applied to particular property paths. Settings that are set on `ExampleMatcher` are inherited by property path settings unless they are defined explicitly. Settings on a property patch have higher precedence than default settings. The following table describes the scope of the various `ExampleMatcher` settings:
+
+[cols="1,2", options="header"]
+.Scope of `ExampleMatcher` settings
+|===
+| Setting
+| Scope
+
+| Null-handling
+| `ExampleMatcher`
+
+| String matching
+| `ExampleMatcher` and property path
+
+| Ignoring properties
+| Property path
+
+| Case sensitivity
+| `ExampleMatcher` and property path
+
+| Value transformation
+| Property path
+
+|===

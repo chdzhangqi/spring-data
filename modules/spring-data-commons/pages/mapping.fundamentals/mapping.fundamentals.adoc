@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[mapping.fundamentals]]
+= Object Mapping Fundamentals
+
+This section covers the fundamentals of Spring Data object mapping, object creation, field and property access, mutability and immutability.
+Note, that this section only applies to Spring Data modules that do not use the object mapping of the underlying data store (like JPA).
+Also be sure to consult the store-specific sections for store-specific object mapping, like indexes, customizing column or field names or the like.
+
+Core responsibility of the Spring Data object mapping is to create instances of domain objects and map the store-native data structures onto those.
+This means we need two fundamental steps:
+
+1. Instance creation by using one of the constructors exposed.
+2. Instance population to materialize all exposed properties.
+

@@ -1,0 +1,4 @@
+include::page$attributes.adoc[]
+[appendix]
+= Populators namespace reference
+

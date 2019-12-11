@@ -1,0 +1,55 @@
+include::page$attributes.adoc[]
+[[mapping.object-creation]]
+== Object creation
+
+Spring Data automatically tries to detect a persistent entity's constructor to be used to materialize objects of that type.
+The resolution algorithm works as follows:
+
+1. If there's a no-argument constructor, it will be used.
+Other constructors will be ignored.
+2. If there's a single constructor taking arguments, it will be used.
+3. If there are multiple constructors taking arguments, the one to be used by Spring Data will have to be annotated with `@PersistenceConstructor`.
+
+The value resolution assumes constructor argument names to match the property names of the entity, i.e. the resolution will be performed as if the property was to be populated, including all customizations in mapping (different datastore column or field name etc.).
+This also requires either parameter names information available in the class file or an `@ConstructorProperties` annotation being present on the constructor.
+
+The value resolution can be customized by using Spring Framework's `@Value` value annotation using a store-specific SpEL expression.
+Please consult the section on store specific mappings for further details.
+
+[[mapping.object-creation.details]]
+.Object creation internals
+****
+
+To avoid the overhead of reflection, Spring Data object creation uses a factory class generated at runtime by default, which will call the domain classes constructor directly.
+I.e. for this example type:
+
+[source, java]
+----
+class Person {
+  Person(String firstname, String lastname) { … }
+}
+----
+
+we will create a factory class semantically equivalent to this one at runtime:
+
+[source, java]
+----
+class PersonObjectInstantiator implements ObjectInstantiator {
+
+  Object newInstance(Object... args) {
+    return new Person((String) args[0], (String) args[1]);
+  }
+}
+----
+
+This gives us a roundabout 10% performance boost over reflection.
+For the domain class to be eligible for such optimization, it needs to adhere to a set of constraints:
+
+- it must not be a private class
+- it must not be a non-static inner class
+- it must not be a CGLib proxy class
+- the constructor to be used by Spring Data must not be private
+
+If any of these criteria match, Spring Data will fall back to entity instantiation via reflection.
+****
+

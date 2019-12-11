@@ -1,0 +1,35 @@
+include::page$attributes.adoc[]
+[[projection.dynamic]]
+== Dynamic Projections
+
+So far, we have used the projection type as the return type or element type of a collection.
+However, you might want to select the type to be used at invocation time (which makes it dynamic).
+To apply dynamic projections, use a query method such as the one shown in the following example:
+
+.A repository using a dynamic projection parameter
+====
+[source, java]
+----
+interface PersonRepository extends Repository<Person, UUID> {
+
+  <T> Collection<T> findByLastname(String lastname, Class<T> type);
+}
+----
+====
+
+This way, the method can be used to obtain the aggregates as is or with a projection applied, as shown in the following example:
+
+.Using a repository with dynamic projections
+====
+[source, java]
+----
+void someMethod(PersonRepository people) {
+
+  Collection<Person> aggregates =
+    people.findByLastname("Matthews", Person.class);
+
+  Collection<NamesOnly> aggregates =
+    people.findByLastname("Matthews", NamesOnly.class);
+}
+----
+====

@@ -1,0 +1,8 @@
+include::page$attributes.adoc[]
+[[query-by-example.introduction]]
+== Introduction
+
+This chapter provides an introduction to Query by Example and explains how to use it.
+
+Query by Example (QBE) is a user-friendly querying technique with a simple interface. It allows dynamic query creation and does not require you to write queries that contain field names. In fact, Query by Example does not require you to write queries by using store-specific query languages at all.
+

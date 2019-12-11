@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+
+== General recommendations
+
+* _Try to stick to immutable objects_ -- Immutable objects are straightforward to create as materializing an object is then a matter of calling its constructor only.
+Also, this avoids your domain objects to be littered with setter methods that allow client code to manipulate the objects state.
+If you need those, prefer to make them package protected so that they can only be invoked by a limited amount of co-located types.
+Constructor-only materialization is up to 30% faster than properties population.
+* _Provide an all-args constructor_ -- Even if you cannot or don't want to model your entities as immutable values, there's still value in providing a constructor that takes all properties of the entity as arguments, including the mutable ones, as this allows the object mapping to skip the property population for optimal performance.
+* _Use factory methods instead of overloaded constructors to avoid ``@PersistenceConstructor``_ -- With an all-argument constructor needed for optimal performance, we usually want to expose more application use case specific constructors that omit things like auto-generated identifiers etc.
+It's an established pattern to rather use static factory methods to expose these variants of the all-args constructor.
+* _Make sure you adhere to the constraints that allow the generated instantiator and property accessor classes to be used_ --
+* _For identifiers to be generated, still use a final field in combination with a wither method_ --
+* _Use Lombok to avoid boilerplate code_ -- As persistence operations usually require a constructor taking all arguments, their declaration becomes a tedious repetition of boilerplate parameter to field assignments that can best be avoided by using Lombok's `@AllArgsConstructor`.
