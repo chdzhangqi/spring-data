@@ -1,0 +1,3 @@
+:springVersion: 5.2.2.RELEASE
+:spring-framework-docs: http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference
+:spring-framework-javadoc: https://docs.spring.io/spring/docs/{springVersion}/javadoc-api
