@@ -1,0 +1,17 @@
+name: spring-data-docs
+version: master
+title: Spring data docs
+nav:
+  - modules/spring-data-commons/nav.adoc
+  - modules/spring-data-jdbc/nav.adoc
+  - modules/spring-data-jdbc-ext/nav.adoc
+  - modules/spring-data-jpa/nav.adoc
+  - modules/spring-data-keyvalue/nav.adoc
+  - modules/spring-data-ldap/nav.adoc
+  - modules/spring-data-mongodb/nav.adoc
+  - modules/spring-data-redis/nav.adoc
+  - modules/spring-data-rest/nav.adoc
+  - modules/spring-data-cassandra/nav.adoc
+  - modules/spring-data-geode/nav.adoc
+  - modules/spring-data-solr/nav.adoc
+  - modules/spring-data-gemfire/nav.adoc
