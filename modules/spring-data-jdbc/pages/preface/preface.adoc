@@ -1,0 +1,7 @@
+include::page$attributes.adoc[]
+[[preface]]
+= Preface
+
+Spring Data JDBC offers a repository abstraction based on JDBC.
+
+[[project]]

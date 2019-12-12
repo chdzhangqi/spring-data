@@ -1,0 +1,5 @@
+include::page$attributes.adoc[]
+[appendix]
+= Frequently Asked Questions
+
+Sorry. We have no frequently asked questions so far.

@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[dependencies.spring-boot]]
+== Dependency Management with Spring Boot
+
+Spring Boot selects a recent version of Spring Data modules for you. If you still want to upgrade to a newer version, configure the property `spring-data-releasetrain.version` to the xref:dependencies:dependencies.adoc#dependencies.train-names[train name and iteration] you would like to use.
+

@@ -1,0 +1,564 @@
+include::page$attributes.adoc[]
+[[jdbc.entity-persistence]]
+== Persisting Entities
+
+Saving an aggregate can be performed with the `CrudRepository.save(…)` method.
+If the aggregate is new, this results in an insert for the aggregate root, followed by insert statements for all directly or indirectly referenced entities.
+
+If the aggregate root is not new, all referenced entities get deleted, the aggregate root gets updated, and all referenced entities get inserted again.
+Note that whether an instance is new is part of the instance's state.
+
+NOTE: This approach has some obvious downsides.
+If only few of the referenced entities have been actually changed, the deletion and insertion is wasteful.
+While this process could and probably will be improved, there are certain limitations to what Spring Data JDBC can offer.
+It does not know the previous state of an aggregate.
+So any update process always has to take whatever it finds in the database and make sure it converts it to whatever is the state of the entity passed to the save method.
+
+[[mapping.fundamentals]]
+= Object Mapping Fundamentals
+
+This section covers the fundamentals of Spring Data object mapping, object creation, field and property access, mutability and immutability.
+Note, that this section only applies to Spring Data modules that do not use the object mapping of the underlying data store (like JPA).
+Also be sure to consult the store-specific sections for store-specific object mapping, like indexes, customizing column or field names or the like.
+
+Core responsibility of the Spring Data object mapping is to create instances of domain objects and map the store-native data structures onto those.
+This means we need two fundamental steps:
+
+1. Instance creation by using one of the constructors exposed.
+2. Instance population to materialize all exposed properties.
+
+[[mapping.object-creation]]
+== Object creation
+
+Spring Data automatically tries to detect a persistent entity's constructor to be used to materialize objects of that type.
+The resolution algorithm works as follows:
+
+1. If there's a no-argument constructor, it will be used.
+Other constructors will be ignored.
+2. If there's a single constructor taking arguments, it will be used.
+3. If there are multiple constructors taking arguments, the one to be used by Spring Data will have to be annotated with `@PersistenceConstructor`.
+
+The value resolution assumes constructor argument names to match the property names of the entity, i.e. the resolution will be performed as if the property was to be populated, including all customizations in mapping (different datastore column or field name etc.).
+This also requires either parameter names information available in the class file or an `@ConstructorProperties` annotation being present on the constructor.
+
+The value resolution can be customized by using Spring Framework's `@Value` value annotation using a store-specific SpEL expression.
+Please consult the section on store specific mappings for further details.
+
+[[mapping.object-creation.details]]
+.Object creation internals
+****
+
+To avoid the overhead of reflection, Spring Data object creation uses a factory class generated at runtime by default, which will call the domain classes constructor directly.
+I.e. for this example type:
+
+[source, java]
+----
+class Person {
+  Person(String firstname, String lastname) { … }
+}
+----
+
+we will create a factory class semantically equivalent to this one at runtime:
+
+[source, java]
+----
+class PersonObjectInstantiator implements ObjectInstantiator {
+
+  Object newInstance(Object... args) {
+    return new Person((String) args[0], (String) args[1]);
+  }
+}
+----
+
+This gives us a roundabout 10% performance boost over reflection.
+For the domain class to be eligible for such optimization, it needs to adhere to a set of constraints:
+
+- it must not be a private class
+- it must not be a non-static inner class
+- it must not be a CGLib proxy class
+- the constructor to be used by Spring Data must not be private
+
+If any of these criteria match, Spring Data will fall back to entity instantiation via reflection.
+****
+
+[[mapping.property-population]]
+== Property population
+
+Once an instance of the entity has been created, Spring Data populates all remaining persistent properties of that class.
+Unless already populated by the entity's constructor (i.e. consumed through its constructor argument list), the identifier property will be populated first to allow the resolution of cyclic object references.
+After that, all non-transient properties that have not already been populated by the constructor are set on the entity instance.
+For that we use the following algorithm:
+
+1. If the property is immutable but exposes a `with…` method (see below), we use the `with…` method to create a new entity instance with the new property value.
+2. If property access (i.e. access through getters and setters) is defined, we're invoking the setter method.
+3. By default, we set the field value directly.
+
+[[mapping.property-population.details]]
+.Property population internals
+****
+Similarly to our xref:jdbc.repositories:jdbc.entity-persistence.adoc#mapping.object-creation.details[optimizations in object construction] we also use Spring Data runtime generated accessor classes to interact with the entity instance.
+
+[source,java]
+----
+class Person {
+
+  private final Long id;
+  private String firstname;
+  private @AccessType(Type.PROPERTY) String lastname;
+
+  Person() {
+    this.id = null;
+  }
+
+  Person(Long id, String firstname, String lastname) {
+    // Field assignments
+  }
+
+  Person withId(Long id) {
+    return new Person(id, this.firstname, this.lastame);
+  }
+
+  void setLastname(String lastname) {
+    this.lastname = lastname;
+  }
+}
+----
+
+.A generated Property Accessor
+====
+[source, java]
+----
+class PersonPropertyAccessor implements PersistentPropertyAccessor {
+
+  private static final MethodHandle firstname;              <2>
+
+  private Person person;                                    <1>
+
+  public void setProperty(PersistentProperty property, Object value) {
+
+    String name = property.getName();
+
+    if ("firstname".equals(name)) {
+      firstname.invoke(person, (String) value);             <2>
+    } else if ("id".equals(name)) {
+      this.person = person.withId((Long) value);            <3>
+    } else if ("lastname".equals(name)) {
+      this.person.setLastname((String) value);              <4>
+    }
+  }
+}
+----
+<1> PropertyAccessor's hold a mutable instance of the underlying object. This is, to enable mutations of otherwise immutable properties.
+<2> By default, Spring Data uses field-access to read and write property values. As per visibility rules of `private` fields, `MethodHandles` are used to interact with fields.
+<3> The class exposes a `withId(…)` method that's used to set the identifier, e.g. when an instance is inserted into the datastore and an identifier has been generated. Calling `withId(…)` creates a new `Person` object. All subsequent mutations will take place in the new instance leaving the previous untouched.
+<4> Using property-access allows direct method invocations without using `MethodHandles`.
+====
+
+This gives us a roundabout 25% performance boost over reflection.
+For the domain class to be eligible for such optimization, it needs to adhere to a set of constraints:
+
+- Types must not reside in the default or under the `java` package.
+- Types and their constructors must be `public`
+- Types that are inner classes must be `static`.
+- The used Java Runtime must allow for declaring classes in the originating `ClassLoader`. Java 9 and newer impose certain limitations.
+
+By default, Spring Data attempts to use generated property accessors and falls back to reflection-based ones if a limitation is detected.
+****
+
+Let's have a look at the following entity:
+
+.A sample entity
+====
+[source, java]
+----
+class Person {
+
+  private final @Id Long id;                                                <1>
+  private final String firstname, lastname;                                 <2>
+  private final LocalDate birthday;
+  private final int age;                                                    <3>
+
+  private String comment;                                                   <4>
+  private @AccessType(Type.PROPERTY) String remarks;                        <5>
+
+  static Person of(String firstname, String lastname, LocalDate birthday) { <6>
+
+    return new Person(null, firstname, lastname, birthday,
+      Period.between(birthday, LocalDate.now()).getYears());
+  }
+
+  Person(Long id, String firstname, String lastname, LocalDate birthday, int age) { <6>
+
+    this.id = id;
+    this.firstname = firstname;
+    this.lastname = lastname;
+    this.birthday = birthday;
+    this.age = age;
+  }
+
+  Person withId(Long id) {                                                  <1>
+    return new Person(id, this.firstname, this.lastname, this.birthday);
+  }
+
+  void setRemarks(String remarks) {                                         <5>
+    this.remarks = remarks;
+  }
+}
+----
+====
+<1> The identifier property is final but set to `null` in the constructor.
+The class exposes a `withId(…)` method that's used to set the identifier, e.g. when an instance is inserted into the datastore and an identifier has been generated.
+The original `Person` instance stays unchanged as a new one is created.
+The same pattern is usually applied for other properties that are store managed but might have to be changed for persistence operations.
+<2> The `firstname` and `lastname` properties are ordinary immutable properties potentially exposed through getters.
+<3> The `age` property is an immutable but derived one from the `birthday` property.
+With the design shown, the database value will trump the defaulting as Spring Data uses the only declared constructor.
+Even if the intent is that the calculation should be preferred, it's important that this constructor also takes `age` as parameter (to potentially ignore it) as otherwise the property population step will attempt to set the age field and fail due to it being immutable and no `with…` method being present.
+<4> The `comment` property is mutable is populated by setting its field directly.
+<5> The `remarks` properties are mutable and populated by setting the `comment` field directly or by invoking the setter method for
+<6> The class exposes a factory method and a constructor for object creation.
+The core idea here is to use factory methods instead of additional constructors to avoid the need for constructor disambiguation through `@PersistenceConstructor`.
+Instead, defaulting of properties is handled within the factory method.
+
+== General recommendations
+
+* _Try to stick to immutable objects_ -- Immutable objects are straightforward to create as materializing an object is then a matter of calling its constructor only.
+Also, this avoids your domain objects to be littered with setter methods that allow client code to manipulate the objects state.
+If you need those, prefer to make them package protected so that they can only be invoked by a limited amount of co-located types.
+Constructor-only materialization is up to 30% faster than properties population.
+* _Provide an all-args constructor_ -- Even if you cannot or don't want to model your entities as immutable values, there's still value in providing a constructor that takes all properties of the entity as arguments, including the mutable ones, as this allows the object mapping to skip the property population for optimal performance.
+* _Use factory methods instead of overloaded constructors to avoid ``@PersistenceConstructor``_ -- With an all-argument constructor needed for optimal performance, we usually want to expose more application use case specific constructors that omit things like auto-generated identifiers etc.
+It's an established pattern to rather use static factory methods to expose these variants of the all-args constructor.
+* _Make sure you adhere to the constraints that allow the generated instantiator and property accessor classes to be used_ --
+* _For identifiers to be generated, still use a final field in combination with a `with…` method_ --
+* _Use Lombok to avoid boilerplate code_ -- As persistence operations usually require a constructor taking all arguments, their declaration becomes a tedious repetition of boilerplate parameter to field assignments that can best be avoided by using Lombok's `@AllArgsConstructor`.
+
+[[mapping.kotlin]]
+== Kotlin support
+
+Spring Data adapts specifics of Kotlin to allow object creation and mutation.
+
+=== Kotlin object creation
+
+Kotlin classes are supported to be instantiated , all classes are immutable by default and require explicit property declarations to define mutable properties.
+Consider the following `data` class `Person`:
+
+====
+[source,java]
+----
+data class Person(val id: String, val name: String)
+----
+====
+
+The class above compiles to a typical class with an explicit constructor. We can customize this class by adding another constructor and annotate it with `@PersistenceConstructor` to indicate a constructor preference:
+
+====
+[source,java]
+----
+data class Person(var id: String, val name: String) {
+
+    @PersistenceConstructor
+    constructor(id: String) : this(id, "unknown")
+}
+----
+====
+
+Kotlin supports parameter optionality by allowing default values to be used if a parameter is not provided.
+When Spring Data detects a constructor with parameter defaulting, then it leaves these parameters absent if the data store does not provide a value (or simply returns `null`) so Kotlin can apply parameter defaulting. Consider the following class that applies parameter defaulting for `name`
+
+====
+[source,java]
+----
+data class Person(var id: String, val name: String = "unknown")
+----
+====
+
+Every time the `name` parameter is either not part of the result or its value is `null`, then the `name` defaults to `unknown`.
+
+=== Property population of Kotlin data classes
+
+In Kotlin, all classes are immutable by default and require explicit property declarations to define mutable properties. Consider the following `data` class `Person`:
+
+====
+[source,java]
+----
+data class Person(val id: String, val name: String)
+----
+====
+
+This class is effectively immutable. It allows to create new instances as Kotlin generates a `copy(…)` method that creates new object instances copying all property values from the existing object and applying property values provided as arguments to the method.
+[[jdbc.entity-persistence.types]]
+=== Supported Types in Your Entity
+
+The properties of the following types are currently supported:
+
+* All primitive types and their boxed types (`int`, `float`, `Integer`, `Float`, and so on)
+
+* Enums get mapped to their name.
+
+* `String`
+
+* `java.util.Date`, `java.time.LocalDate`, `java.time.LocalDateTime`, and `java.time.LocalTime`
+
+* Arrays and Collections of the types mentioned above can be mapped to columns of array type if your database supports that.
+
+* Anything your database driver accepts.
+
+* References to other entities. They are considered a one-to-one relationship, or an embedded type.
+It is optional for one-to-one relationship entities to have an `id` attribute.
+The table of the referenced entity is expected to have an additional column named the same as the table of the referencing entity.
+You can change this name by implementing `NamingStrategy.getReverseColumnName(PersistentPropertyPathExtension path)`.
+Embedded entities do not need an `id`.
+If one is present it gets ignored.
+
+* `Set<some entity>` is considered a one-to-many relationship.
+The table of the referenced entity is expected to have an additional column named the same as the table of the referencing entity.
+You can change this name by implementing `NamingStrategy.getReverseColumnName(PersistentPropertyPathExtension path)`.
+
+* `Map<simple type, some entity>` is considered a qualified one-to-many relationship.
+The table of the referenced entity is expected to have two additional columns: One named the same as the table of the referencing entity for the foreign key and one with the same name and an additional `_key` suffix for the map key.
+You can change this behavior by implementing `NamingStrategy.getReverseColumnName(PersistentPropertyPathExtension path)` and `NamingStrategy.getKeyColumn(RelationalPersistentProperty property)`, respectively.
+Alternatively you may annotate the attribute with `@MappedCollection(idColumn="your_column_name", keyColumn="your_key_column_name")`
+
+* `List<some entity>` is mapped as a  `Map<Integer, some entity>`.
+
+The handling of referenced entities is limited.
+This is based on the idea of aggregate roots as described above.
+If you reference another entity, that entity is, by definition, part of your aggregate.
+So, if you remove the reference, the previously referenced entity gets deleted.
+This also means references are 1-1 or 1-n, but not n-1 or n-m.
+
+If you have n-1 or n-m references, you are, by definition, dealing with two separate aggregates.
+References between those should be encoded as simple `id` values, which should map properly with Spring Data JDBC.
+
+
+[[jdbc.entity-persistence.custom-converters]]
+=== Custom converters
+
+Custom converters can be registered, for types that are not supported by default, by inheriting your configuration from `AbstractJdbcConfiguration` and overwriting the method `jdbcCustomConversions()`.
+
+====
+[source, java]
+----
+@Configuration
+public class DataJdbcConfiguration extends AbstractJdbcConfiguration {
+
+    @Override
+    public JdbcCustomConversions jdbcCustomConversions() {
+
+      return new JdbcCustomConversions(Collections.singletonList(TimestampTzToDateConverter.INSTANCE));
+
+    }
+
+    @ReadingConverter
+    enum TimestampTzToDateConverter implements Converter<TIMESTAMPTZ, Date> {
+
+        INSTANCE;
+
+        @Override
+        public Date convert(TIMESTAMPTZ source) {
+            //...
+        }
+    }
+}
+----
+====
+
+The constructor of `JdbcCustomConversions` accepts a list of `org.springframework.core.convert.converter.Converter`.
+
+Converters should be annotated with `@ReadingConverter` or `@WritingConverter` in order to control their applicability to only reading from or to writing to the database.
+
+`TIMESTAMPTZ` in the example is a database specific data type that needs conversion into something more suitable for a domain model.
+
+==== JdbcValue
+
+Value conversion uses `JdbcValue` to enrich values propagated to JDBC operations with a `java.sql.Types` type.
+Register a custom write converter if you need to specify a JDBC-specific type instead of using type derivation.
+This converter should convert the value to `JdbcValue` which has a field for the value and for the actual `JDBCType`.
+
+[[jdbc.entity-persistence.naming-strategy]]
+=== `NamingStrategy`
+
+When you use the standard implementations of `CrudRepository` that Spring Data JDBC provides, they expect a certain table structure.
+You can tweak that by providing a {javadoc-base}org/springframework/data/relational/core/mapping/NamingStrategy.html[`NamingStrategy`] in your application context.
+
+[[jdbc.entity-persistence.custom-table-name]]
+=== `Custom table names`
+
+When the NamingStrategy does not matching on your database table names, you can customize the names with the {javadoc-base}org/springframework/data/relational/core/mapping/Table.html[`@Table`] annotation.
+The element `value` of this annotation provides the custom table name. The following example maps the `MyEntity` class to the `CUSTOM_TABLE_NAME` table in the database:
+
+====
+[source, java]
+----
+@Table("CUSTOM_TABLE_NAME")
+public class MyEntity {
+    @Id
+    Integer id;
+
+    String name;
+}
+----
+====
+
+[[jdbc.entity-persistence.custom-column-name]]
+=== `Custom column names`
+
+When the NamingStrategy does not matching on your database column names, you can customize the names with the {javadoc-base}org/springframework/data/relational/core/mapping/Column.html[`@Column`] annotation.
+The element `value` of this annotation provides the custom column name.
+The following example maps the `name` property of the `MyEntity` class to the `CUSTOM_COLUMN_NAME` column in the database:
+
+====
+[source, java]
+----
+public class MyEntity {
+    @Id
+    Integer id;
+
+    @Column("CUSTOM_COLUMN_NAME")
+    String name;
+}
+----
+====
+
+The {javadoc-base}org/springframework/data/relational/core/mapping/MappedCollection.html[`@MappedCollection`] annotation can be used on a reference type (one-to-one relationship) or on Sets, Lists, and Maps (one-to-many relationship)
+On all these types the `value` element of the annotation is used to provide a custom name for the foreign key column referencing the id column in the other table.
+In the following example the corresponding table for the `MySubEntity` class has a name column, and the id column of the `MyEntity` id for relationship reasons.
+The name of this `MySubEntity` class's id column can also be customized with the `idColumn` element of the {javadoc-base}org/springframework/data/relational/core/mapping/MappedCollection.html[`@MappedCollection`] annotation:
+
+====
+[source, java]
+----
+public class MyEntity {
+    @Id
+    Integer id;
+
+    @MappedCollection(idColumn = "CUSTOM_COLUMN_NAME")
+    Set<MySubEntity> name;
+}
+
+public class MySubEntity {
+    String name;
+}
+----
+====
+
+When using `List` and `Map` you must have an additional column for the position of a dataset in the `List` or the key value of the entity in the `Map`.
+This additional column name may be customized with the `keyColumn` Element of the {javadoc-base}org/springframework/data/relational/core/mapping/MappedCollection.html[`@MappedCollection`] annotation:
+
+====
+[source, java]
+----
+public class MyEntity {
+    @Id
+    Integer id;
+
+    @MappedCollection(idColumn = "CUSTOM_COLUMN_NAME", keyColumn = "CUSTOM_KEY_COLUMN_NAME")
+    List<MySubEntity> name;
+}
+
+public class MySubEntity {
+    String name;
+}
+----
+====
+
+[[jdbc.entity-persistence.embedded-entities]]
+=== Embedded entities
+
+Embedded entities are used to have value objects in your java data model, even if there is only one table in your database.
+In the following example you see, that `MyEntity` is mapped with the `@Embedded` annotation.
+The consequence of this is, that in the database a table `my_entity` with the two columns `id` and `name` (from the `EmbeddedEntity` class) is expected.
+
+However, if the `name` column is actually `null` within the result set, the entire property `embeddedEntity` will be set to null according to the `onEmpty` of `@Embedded`, which ``null``s objects when all nested properties are `null`. +
+Opposite to this behavior `USE_EMPTY` tries to create a new instance using either a default constructor or one that accepts nullable parameter values from the result set.
+
+.Sample Code of embedding objects
+====
+[source, java]
+----
+public class MyEntity {
+
+    @Id
+    Integer id;
+
+    @Embedded(onEmpty = USE_NULL) <1>
+    EmbeddedEntity embeddedEntity;
+}
+
+public class EmbeddedEntity {
+    String name;
+}
+----
+<1> ``Null``s `embeddedEntity` if `name` in `null`. Use `USE_EMPTY` to instanciate `embeddedEntity` with a potential `null` value for the `name` property.
+====
+
+If you need a value object multiple times in an entity, this can be achieved with the optional `prefix` element of the `@Embedded` annotation.
+This element represents a prefix and is prepend for each column name in the embedded object.
+
+[TIP]
+====
+Make use of the shortcuts `@Embedded.Nullable` & `@Embedded.Empty` for `@Embedded(onEmpty = USE_NULL)` and `@Embedded(onEmpty = USE_EMPTY)` to reduce verbositility and simultaneously set JSR-305 `@javax.annotation.Nonnull` accordingly.
+
+[source, java]
+----
+public class MyEntity {
+
+    @Id
+    Integer id;
+
+    @Embedded.Nullable <1>
+    EmbeddedEntity embeddedEntity;
+}
+----
+<1> Shortcut for `@Embedded(onEmpty = USE_NULL)`.
+====
+
+Embedded entities containing a `Collection` or a `Map` will always be considered non empty since they will at least contain the empty collection or map.
+Such an entity will therefore never be `null` even when using @Embedded(onEmpty = USE_NULL).
+
+[[jdbc.entity-persistence.state-detection-strategies]]
+=== Entity State Detection Strategies
+
+The following table describes the strategies that Spring Data JDBC offers for detecting whether an entity is new:
+
+.Options for detection whether an entity is new in Spring Data JDBC
+[options = "autowidth"]
+|===============
+|Id-Property inspection (the default)|By default, Spring Data JDBC inspects the identifier property of the given entity.
+If the identifier property is `null`, then the entity is assumed to be new. Otherwise, it is assumed to not be new.
+|Implementing `Persistable`|If an entity implements `Persistable`, Spring Data JDBC delegates the new detection to the `isNew(…)` method of the entity.
+See the link:$$https://docs.spring.io/spring-data/data-commons/docs/current/api/index.html?org/springframework/data/domain/Persistable.html$$[Javadoc] for details.
+|Implementing `EntityInformation`|You can customize the `EntityInformation` abstraction used in the `SimpleJdbcRepository` implementation by creating a subclass of `JdbcRepositoryFactory` and overriding the `getEntityInformation(…)` method.
+You then have to register the custom implementation of `JdbcRepositoryFactory` as a Spring bean.
+Note that this should rarely be necessary. See the link:{javadoc-base}org/springframework/data/jdbc/repository/support/JdbcRepositoryFactory.html[Javadoc] for details.
+|===============
+
+[[jdbc.entity-persistence.id-generation]]
+=== ID Generation
+
+Spring Data JDBC uses the ID to identify entities.
+The ID of an entity must be annotated with Spring Data's https://docs.spring.io/spring-data/commons/docs/current/api/org/springframework/data/annotation/Id.html[`@Id`] annotation.
+
+When your data base has an auto-increment column for the ID column, the generated value gets set in the entity after inserting it into the database.
+
+One important constraint is that, after saving an entity, the entity must not be new any more.
+Note that whether an entity is new is part of the entity's state.
+With auto-increment columns, this happens automatically, because the ID gets set by Spring Data with the value from the ID column.
+If you are not using auto-increment columns, you can use a `BeforeSave` listener, which sets the ID of the entity (covered later in this document).
+
+
+[[jdbc.entity-persistence.optimistic-locking]]
+=== Optimistic Locking
+
+Spring Data JDBC supports optimistic locking by means of a numeric attribute that is annotated with
+ https://docs.spring.io/spring-data/commons/docs/current/api/org/springframework/data/annotation/Version.html[`@Version`] on the aggregate root.
+Whenever Spring Data JDBC saves an aggregate with such a version attribute two things happen:
+The update statement for the aggregate root will contain a where clause checking that the version stored in the database is actually unchanged.
+If this isn't the case an `OptimisticLockingFailureException` will be thrown.
+Also the version attribute gets increased both in the entity and in the database so a concurrent action will notice the change and throw an `OptimisticLockingFailureException` if applicable as described above.
+
+This process also applies to inserting new aggregates, where a `null` or `0` version indicates a new instance and the increased instance afterwards marks the instance as not new anymore, making this work rather nicely with cases where the id is generated during object construction for example when UUIDs are used.
+
+During deletes the version check also applies but no version is increased.
+

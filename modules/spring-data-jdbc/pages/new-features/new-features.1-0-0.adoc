@@ -1,0 +1,12 @@
+include::page$attributes.adoc[]
+[[new-features.1-0-0]]
+== What's New in Spring Data JDBC 1.0
+
+* Basic support for `CrudRepository`.
+* `@Query` support.
+* MyBatis support.
+* Id generation.
+* Event support.
+* Auditing.
+* `CustomConversions`.
+

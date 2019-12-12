@@ -1,0 +1,88 @@
+include::page$attributes.adoc[]
+[[repositories.query-methods]]
+== Query methods
+
+Standard CRUD functionality repositories usually have queries on the underlying datastore. With Spring Data, declaring those queries becomes a four-step process:
+
+. Declare an interface extending Repository or one of its subinterfaces and type it to the domain class and ID type that it should handle, as shown in the following example:
++
+
+[source, java]
+----
+interface PersonRepository extends Repository<Person, Long> { … }
+----
+
+. Declare query methods on the interface.
++
+
+[source, java]
+----
+interface PersonRepository extends Repository<Person, Long> {
+  List<Person> findByLastname(String lastname);
+}
+----
+
+. Set up Spring to create proxy instances for those interfaces, either with xref:repositories:repositories.create-instances.adoc#repositories.create-instances.java-config[JavaConfig] or with xref:repositories:repositories.create-instances.adoc#repositories.create-instances[XML configuration].
+
+.. To use Java configuration, create a class similar to the following:
++
+
+[source, java]
+----
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@EnableJpaRepositories
+class Config { … }
+----
+
+
+.. To use XML configuration, define a bean similar to the following:
++
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans
+     https://www.springframework.org/schema/beans/spring-beans.xsd
+     http://www.springframework.org/schema/data/jpa
+     https://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
+
+   <jpa:repositories base-package="com.acme.repositories"/>
+
+</beans>
+----
+
++
+The JPA namespace is used in this example. If you use the repository abstraction for any other store, you need to change this to the appropriate namespace declaration of your store module. In other words, you should exchange `jpa` in favor of, for example, `mongodb`.
++
+Also, note that the JavaConfig variant does not configure a package explicitly, because the package of the annotated class is used by default. To customize the package to scan, use one of the `basePackage…` attributes of the data-store-specific repository's `@Enable${store}Repositories`-annotation.
+
+. Inject the repository instance and use it, as shown in the following example:
++
+
+[source, java]
+----
+class SomeClient {
+
+  private final PersonRepository repository;
+
+  SomeClient(PersonRepository repository) {
+    this.repository = repository;
+  }
+
+  void doSomething() {
+    List<Person> persons = repository.findByLastname("Matthews");
+  }
+}
+----
+
+The sections that follow explain each step in detail:
+
+* xref:repositories:repositories.definition.adoc#repositories.definition[repositories.definition]
+* xref:repositories:repositories.query-methods.details.adoc#repositories.query-methods.details[repositories.query-methods.details]
+* xref:repositories:repositories.create-instances.adoc#repositories.create-instances[repositories.create-instances]
+* xref:repositories:repositories.custom-implementations.adoc#repositories.custom-implementations[repositories.custom-implementations]
+

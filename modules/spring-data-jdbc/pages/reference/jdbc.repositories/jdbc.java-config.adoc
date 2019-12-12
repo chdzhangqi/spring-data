@@ -1,0 +1,28 @@
+include::page$attributes.adoc[]
+[[jdbc.java-config]]
+== Annotation-based Configuration
+The Spring Data JDBC repositories support can be activated by an annotation through Java configuration, as the following example shows:
+
+.Spring Data JDBC repositories using Java configuration
+====
+[source, java]
+----
+@Configuration
+@EnableJdbcRepositories
+class ApplicationConfig {
+
+  @Bean
+  public DataSource dataSource() {
+
+    EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
+    return builder.setType(EmbeddedDatabaseType.HSQL).build();
+  }
+
+}
+----
+====
+
+The configuration class in the preceding example sets up an embedded HSQL database by using the `EmbeddedDatabaseBuilder` API of `spring-jdbc`.
+We activate Spring Data JDBC repositories by using the `@EnableJdbcRepositories`.
+If no base package is configured, it uses the package in which the configuration class resides.
+

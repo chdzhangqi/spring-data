@@ -1,0 +1,86 @@
+include::page$attributes.adoc[]
+[[jdbc.query-methods]]
+== Query Methods
+
+This section offers some specific information about the implementation and use of Spring Data JDBC.
+
+[[jdbc.query-methods.strategies]]
+=== Query Lookup Strategies
+
+The JDBC module supports defining a query manually only as a String in a `@Query` annotation.
+Deriving a query from the name of the method is currently not supported.
+
+[[jdbc.query-methods.at-query]]
+=== Using `@Query`
+
+The following example shows how to use `@Query` to declare a query method:
+
+.Declare a query method by using @Query
+====
+[source, java]
+----
+public interface UserRepository extends CrudRepository<User, Long> {
+
+  @Query("select firstName, lastName from User u where u.emailAddress = :email")
+  User findByEmailAddress(@Param("email") String email);
+}
+----
+====
+
+NOTE: Spring fully supports Java 8’s parameter name discovery based on the `-parameters` compiler flag. By using this flag in your build as an alternative to debug information, you can omit the `@Param` annotation for named parameters.
+
+NOTE: Spring Data JDBC supports only named parameters.
+
+
+[[jdbc.query-methods.at-query.custom-rowmapper]]
+==== Custom `RowMapper`
+
+You can configure which `RowMapper` to use, either by using the `@Query(rowMapperClass = ....)` or by registering a `RowMapperMap` bean and registering a `RowMapper` per method return type. The following example shows how to register `RowMappers`:
+
+====
+[source,java]
+----
+@Bean
+RowMapperMap rowMappers() {
+	return new ConfigurableRowMapperMap() //
+		.register(Person.class, new PersonRowMapper()) //
+		.register(Address.class, new AddressRowMapper());
+}
+----
+====
+
+When determining which `RowMapper` to use for a method, the following steps are followed, based on the return type of the method:
+
+. If the type is a simple type, no `RowMapper` is used.
++
+Instead, the query is expected to return a single row with a single column, and a conversion to the return type is applied to that value.
+. The entity classes in the `RowMapperMap` are iterated until one is found that is a superclass or interface of the return type in question.
+The `RowMapper` registered for that class is used.
++
+Iterating happens in the order of registration, so make sure to register more general types after specific ones.
+
+If applicable, wrapper types such as collections or `Optional` are unwrapped.
+Thus, a return type of `Optional<Person>` uses the `Person` type in the preceding process.
+
+
+[[jdbc.query-methods.at-query.modifying]]
+==== Modifying Query
+
+You can mark a query as being a modifying query by using the `@Modifying` on query method, as the following example shows:
+
+====
+[source,java]
+----
+@Modifying
+@Query("UPDATE DUMMYENTITY SET name = :name WHERE id = :id")
+boolean updateName(@Param("id") Long id, @Param("name") String name);
+----
+====
+
+You can specify the following return types:
+
+* `void`
+* `int` (updated record count)
+* `boolean`(whether a record was updated)
+
+
