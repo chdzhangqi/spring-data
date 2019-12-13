@@ -1,0 +1,11 @@
+include::page$attributes.adoc[]
+[[new-features.1-11-0]]
+== What's New in Spring Data JPA 1.11
+
+Spring Data JPA 1.11 added the following features:
+
+* Improved compatibility with Hibernate 5.2.
+* Support any-match mode for xref:jpa.repositories:query-by-example.adoc#query-by-example[query-by-example].
+* Paged query execution optimizations.
+* Support for the `exists` projection in repository query derivation.
+

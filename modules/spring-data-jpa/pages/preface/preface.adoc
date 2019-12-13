@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[preface]]
+= Preface
+
+Spring Data JPA provides repository support for the Java Persistence API (JPA). It eases development of applications that need to access JPA data sources.
+

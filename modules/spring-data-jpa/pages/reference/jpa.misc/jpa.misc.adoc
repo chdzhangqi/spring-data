@@ -1,0 +1,4 @@
+include::page$attributes.adoc[]
+[[jpa.misc]]
+= Miscellaneous Considerations
+

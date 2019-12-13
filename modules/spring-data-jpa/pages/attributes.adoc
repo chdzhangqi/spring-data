@@ -1,0 +1,17 @@
+:revnumber: {version}
+:revdate: {localdate}
+:javadoc-base: https://docs.spring.io/spring-data/jdbc/docs/{revnumber}/api/
+
+:toc:
+:toc-placement!:
+:linkcss:
+:doctype: book
+:docinfo: shared
+:toclevels: 4
+:source-highlighter: prettify
+:icons: font
+:imagesdir: images
+
+:spring-framework-docs: https://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference
+:spring-framework-javadoc: https://docs.spring.io/spring/docs/{springVersion}/javadoc-api
+:spring-framework-docs: http://docs.spring.io/spring-framework/docs/{springVersion}/spring-framework-reference/

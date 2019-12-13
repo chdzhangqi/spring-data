@@ -1,0 +1,12 @@
+include::page$attributes.adoc[]
+[[new-features.1-10-0]]
+== What's New in Spring Data JPA 1.10
+
+Spring Data JPA 1.10 added the following features:
+
+* Support for xref:jpa.repositories:jpa.query-methods.adoc#projections[projections] in repository query methods.
+* Support for xref:jpa.repositories:query-by-example.adoc#query-by-example[query-by-example].
+* The following annotations have been enabled to build on composed annotations: `@EntityGraph`, `@Lock`, `@Modifying`, `@Query`, `@QueryHints`, and `@Procedure`.
+* Support for the `Contains` keyword on collection expressions.
+* `AttributeConverter` implementations for `ZoneId` of JSR-310 and ThreeTenBP.
+* Upgrade to Querydsl 4, Hibernate 5, OpenJPA 2.4, and EclipseLink 2.6.1.

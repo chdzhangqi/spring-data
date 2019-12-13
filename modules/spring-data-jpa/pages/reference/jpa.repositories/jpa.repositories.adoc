@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[jpa.repositories]]
+= JPA Repositories
+
+This chapter points out the specialties for repository support for JPA. This builds on the core repository support explained in "`xref:repositories:repositories.adoc#repositories[repositories]`". Make sure you have a sound understanding of the basic concepts explained there.
+
