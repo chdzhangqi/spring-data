@@ -15,3 +15,12 @@ nav:
   - modules/spring-data-geode/nav.adoc
   - modules/spring-data-solr/nav.adoc
   - modules/spring-data-gemfire/nav.adoc
+
+# from spring-data-build/parent/pom.xml
+asciidoc:
+  attributes:
+    version: 2.1.4.RELEASE
+    aspectjVersion: 1.9.2
+    querydslVersion: 4.2.1
+    springVersion: 5.1.4.RELEASE
+    releasetrainVersion: Lovelace-SR4
