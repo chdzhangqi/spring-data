@@ -1,0 +1,9 @@
+include::page$attributes.adoc[]
+[float]
+= Appendix Document Structure
+
+The appendix contains various additional detail that complements the information in the rest of the reference documentation:
+
+* "`xref:.adoc#appendix:schema[appendix:schema]`" defines the schemas provided by Spring Data Redis.
+
+* "`xref:.adoc#appendix:command-reference[appendix:command-reference]`" details which commands are supported by `RedisTemplate`.

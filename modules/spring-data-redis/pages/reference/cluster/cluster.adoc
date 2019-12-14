@@ -1,0 +1,5 @@
+include::page$attributes.adoc[]
+[[cluster]]
+= Redis Cluster
+
+Working with http://redis.io/topics/cluster-spec[Redis Cluster] requires Redis Server version 3.0+. See the http://redis.io/topics/cluster-tutorial[Cluster Tutorial] for more information.

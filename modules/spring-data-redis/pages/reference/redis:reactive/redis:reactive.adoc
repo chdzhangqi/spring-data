@@ -1,0 +1,7 @@
+include::page$attributes.adoc[]
+[[redis:reactive]]
+= Reactive Redis support
+:referenceDir: .
+
+This section covers reactive Redis support and how to get started. Reactive Redis support naturally has certain overlaps with xref:redis:redis.adoc#redis[imperative Redis support].
+

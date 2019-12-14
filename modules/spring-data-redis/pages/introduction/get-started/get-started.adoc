@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[get-started]]
+= Getting Started
+
+This section provides an easy-to-follow guide for getting started with the Spring Data Redis module.
+

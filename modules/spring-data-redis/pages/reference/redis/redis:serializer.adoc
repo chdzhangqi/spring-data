@@ -1,0 +1,35 @@
+include::page$attributes.adoc[]
+[[redis:serializer]]
+== Serializers
+
+From the framework perspective, the data stored in Redis is only bytes. While Redis itself supports various types, for the most part, these refer to the way the data is stored rather than what it represents. It is up to the user to decide whether the information gets translated into strings or any other objects.
+
+In Spring Data, the conversion between the user (custom) types and raw data (and vice-versa) is handled Redis in the `org.springframework.data.redis.serializer` package.
+
+This package contains two types of serializers that, as the name implies, take care of the serialization process:
+
+* Two-way serializers based on ``RedisSerializer``.
+* Element readers and writers that use `RedisElementReader` and ``RedisElementWriter``.
+
+The main difference between these variants is that `RedisSerializer` primarily serializes to `byte[]` while readers and writers use `ByteBuffer`.
+
+Multiple implementations are available (including two that have been already mentioned in this documentation):
+
+* `JdkSerializationRedisSerializer`, which is used by default for `RedisCache` and `RedisTemplate`.
+* the `StringRedisSerializer`.
+
+However one can use `OxmSerializer` for Object/XML mapping through Spring http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/data-access.html#oxm[OXM] support or `Jackson2JsonRedisSerializer` or `GenericJackson2JsonRedisSerializer` for storing data in http://en.wikipedia.org/wiki/JSON[JSON] format.
+
+Do note that the storage format is not limited only to values. It can be used for keys, values, or hashes without any restrictions.
+
+[WARNING]
+====
+By default, `RedisCache` and `RedisTemplate` are configured to use Java native serialization. Java native serialization is known for allowing remote code execution caused by payloads that exploit vulnerable libraries and classes injecting unverified bytecode. Manipulated input could lead to unwanted code execution in the application during the deserialization step. As a consequence, do not use serialization in untrusted environments. In general, we strongly recommend any other message format (such as JSON) instead.
+
+If you are concerned about security vulnerabilities due to Java serialization, consider the general-purpose serialization filter mechanism at the core JVM level, originally developed for JDK 9 but backported to JDK 8, 7, and 6:
+
+* https://blogs.oracle.com/java-platform-group/entry/incoming_filter_serialization_data_a[Filter Incoming Serialization Data].
+* http://openjdk.java.net/jeps/290[JEP 290].
+* https://www.owasp.org/index.php/Deserialization_of_untrusted_data[OWASP: Deserialization of untrusted data].
+====
+

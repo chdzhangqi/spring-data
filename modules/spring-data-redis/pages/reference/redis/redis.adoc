@@ -1,0 +1,12 @@
+include::page$attributes.adoc[]
+[[redis]]
+= Redis support
+:referenceDir: .
+
+One of the key-value stores supported by Spring Data is http://redis.io[Redis]. To quote the Redis project home page:
+
+[quote]
+Redis is an advanced key-value store. It is similar to memcached but the dataset is not volatile, and values can be strings, exactly like in memcached, but also lists, sets, and ordered sets. All this data types can be manipulated with atomic operations to push/pop elements, add/remove elements, perform server side union, intersection, difference between sets, and so forth. Redis supports different kind of sorting abilities.
+
+Spring Data Redis provides easy configuration and access to Redis from Spring applications. It offers both low-level and high-level abstractions for interacting with the store, freeing the user from infrastructural concerns.
+

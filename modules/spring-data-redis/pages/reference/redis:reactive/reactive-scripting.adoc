@@ -1,0 +1,25 @@
+include::page$attributes.adoc[]
+
+== Reactive Scripting
+
+Executing Redis scripts via the reactive infrastructure can be done using the `ReactiveScriptExecutor` accessed best via `ReactiveRedisTemplate`.
+
+[source,java]
+----
+public class Example {
+
+  @Autowired
+  private ReactiveRedisTemplate<String, String> template;
+
+  public Flux<Long> theAnswerToLife() {
+
+    DefaultRedisScript<Long> script = new DefaultRedisScript<>();
+    script.setLocation(new ClassPathResource("META-INF/scripts/42.lua"));
+    script.setResultType(Long.class);
+
+    return reactiveTemplate.execute(script);
+  }
+}
+----
+
+See to the xref:redis:scripting.adoc#scripting[scripting section] for more details on scripting commands.

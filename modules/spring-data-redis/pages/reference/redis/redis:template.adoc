@@ -1,0 +1,102 @@
+include::page$attributes.adoc[]
+[[redis:template]]
+== Working with Objects through RedisTemplate
+
+Most users are likely to use `RedisTemplate` and its corresponding package, `org.springframework.data.redis.core`. The template is, in fact, the central class of the Redis module, due to its rich feature set. The template offers a high-level abstraction for Redis interactions. While `RedisConnection` offers low-level methods that accept and return binary values (`byte` arrays), the template takes care of serialization and connection management, freeing the user from dealing with such details.
+
+Moreover, the template provides operations views (following the grouping from the Redis command http://redis.io/commands[reference]) that offer rich, generified interfaces for working against a certain type or certain key (through the `KeyBound` interfaces) as described in the following table:
+
+.Operational views
+[width="80%",cols="<1,<2",options="header"]
+|====
+|Interface
+|Description
+
+2+^|_Key Type Operations_
+
+|`GeoOperations`
+|Redis geospatial operations, such as `GEOADD`, `GEORADIUS`,...
+
+|`HashOperations`
+|Redis hash operations
+
+|`HyperLogLogOperations`
+|Redis HyperLogLog operations, such as `PFADD`, `PFCOUNT`,...
+
+|`ListOperations`
+|Redis list operations
+
+|`SetOperations`
+|Redis set operations
+
+|`ValueOperations`
+|Redis string (or value) operations
+
+|`ZSetOperations`
+|Redis zset (or sorted set) operations
+
+2+^|_Key Bound Operations_
+
+|`BoundGeoOperations`
+|Redis key bound geospatial operations
+
+|`BoundHashOperations`
+|Redis hash key bound operations
+
+|`BoundKeyOperations`
+|Redis key bound operations
+
+|`BoundListOperations`
+|Redis list key bound operations
+
+|`BoundSetOperations`
+|Redis set key bound operations
+
+|`BoundValueOperations`
+|Redis string (or value) key bound operations
+
+|`BoundZSetOperations`
+|Redis zset (or sorted set) key bound operations
+
+|====
+
+Once configured, the template is thread-safe and can be reused across multiple instances.
+
+`RedisTemplate` uses a Java-based serializer for most of its operations. This means that any object written or read by the template is serialized and deserialized through Java. You can change the serialization mechanism on the template, and the Redis module offers several implementations, which are available in the `org.springframework.data.redis.serializer` package. See xref:redis:redis:serializer.adoc#redis:serializer[redis:serializer] for more information. You can also set any of the serializers to null and use RedisTemplate with raw byte arrays by setting the `enableDefaultSerializer` property to `false`. Note that the template requires all keys to be non-null. However, values can be null as long as the underlying serializer accepts them. Read the Javadoc of each serializer for more information.
+
+For cases where you need a certain template view, declare the view as a dependency and inject the template. The container automatically performs the conversion, eliminating the `opsFor[X]` calls, as shown in the following example:
+
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:p="http://www.springframework.org/schema/p"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+  <bean id="jedisConnectionFactory" class="org.springframework.data.redis.connection.jedis.JedisConnectionFactory" p:use-pool="true"/>
+  <!-- redis template definition -->
+  <bean id="redisTemplate" class="org.springframework.data.redis.core.RedisTemplate" p:connection-factory-ref="jedisConnectionFactory"/>
+  ...
+
+</beans>
+----
+
+[source,java]
+----
+public class Example {
+
+  // inject the actual template
+  @Autowired
+  private RedisTemplate<String, String> template;
+
+  // inject the template as ListOperations
+  @Resource(name="redisTemplate")
+  private ListOperations<String, String> listOps;
+
+  public void addLink(String userId, URL url) {
+    listOps.leftPush(userId, url.toExternalForm());
+  }
+}
+----
+

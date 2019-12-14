@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[redis:requirements]]
+== Redis Requirements
+
+Spring Redis requires Redis 2.6 or above and Spring Data Redis integrates with http://github.com/lettuce-io/lettuce-core[Lettuce] and http://github.com/xetorthio/jedis[Jedis], two popular open-source Java libraries for Redis.
+

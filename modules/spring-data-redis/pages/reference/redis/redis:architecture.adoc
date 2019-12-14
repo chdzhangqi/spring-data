@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[redis:architecture]]
+== Redis Support High-level View
+
+The Redis support provides several components. For most tasks, the high-level abstractions and support services are the best choice. Note that, at any point, you can move between layers. For example, you can get a low-level connection (or even the native library) to communicate directly with Redis.
+

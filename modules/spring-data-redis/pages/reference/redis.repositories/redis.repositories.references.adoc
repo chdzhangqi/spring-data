@@ -1,0 +1,21 @@
+include::page$attributes.adoc[]
+[[redis.repositories.references]]
+== Persisting References
+Marking properties with `@Reference` allows storing a simple key reference instead of copying values into the hash itself.
+On loading from Redis, references are resolved automatically and mapped back into the object, as shown in the following example:
+
+.Sample Property Reference
+====
+[source,text]
+----
+_class = org.example.Person
+id = e2c7dcee-b8cd-4424-883e-736ce564363e
+firstname = rand
+lastname = al’thor
+mother = people:a9d4b3a0-50d3-4538-a2fc-f7fc2581ee56      <1>
+----
+<1> Reference stores the whole key (`keyspace:id`) of the referenced object.
+====
+
+WARNING: Referenced Objects are not persisted when the referencing object is saved. You must persist changes on referenced objects separately, since only the reference is stored. Indexes set on properties of referenced types are not resolved.
+

@@ -1,0 +1,40 @@
+include::page$attributes.adoc[]
+[[redis.repositories.partial-updates]]
+== Persisting Partial Updates
+
+In some cases, you need not load and rewrite the entire entity just to set a new value within it. A session timestamp for the last active time might be such a scenario where you want to alter one property.
+`PartialUpdate` lets you define `set` and `delete` actions on existing objects while taking care of updating potential expiration times of both the entity itself and index structures. The following example shows a partial update:
+
+.Sample Partial Update
+====
+[source,java]
+----
+PartialUpdate<Person> update = new PartialUpdate<Person>("e2c7dcee", Person.class)
+  .set("firstname", "mat")                                                           <1>
+  .set("address.city", "emond's field")                                              <2>
+  .del("age");                                                                       <3>
+
+template.update(update);
+
+update = new PartialUpdate<Person>("e2c7dcee", Person.class)
+  .set("address", new Address("caemlyn", "andor"))                                   <4>
+  .set("attributes", singletonMap("eye-color", "grey"));                             <5>
+
+template.update(update);
+
+update = new PartialUpdate<Person>("e2c7dcee", Person.class)
+  .refreshTtl(true);                                                                 <6>
+  .set("expiration", 1000);
+
+template.update(update);
+----
+<1> Set the simple `firstname` property to `mat`.
+<2> Set the simple 'address.city' property to 'emond's field' without having to pass in the entire object. This does not work when a custom conversion is registered.
+<3> Remove the `age` property.
+<4> Set complex `address` property.
+<5> Set a map of values, which removes the previously existing map and replaces the values with the given ones.
+<6> Automatically update the server expiration time when altering xref:redis.repositories:redis.repositories.expirations.adoc#redis.repositories.expirations[redis.repositories.expirations].
+====
+
+NOTE: Updating complex objects as well as map (or other collection) structures requires further interaction with Redis to determine existing values, which means that rewriting the entire entity might be faster.
+

@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[redis:reactive:requirements]]
+== Redis Requirements
+
+Spring Data Redis currently integrates with http://github.com/lettuce-io/lettuce-core[Lettuce] as the only reactive Java connector. https://projectreactor.io/[Project Reactor] is used as reactive composition library.
+

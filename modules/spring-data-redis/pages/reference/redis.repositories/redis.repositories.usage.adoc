@@ -1,0 +1,90 @@
+include::page$attributes.adoc[]
+[[redis.repositories.usage]]
+== Usage
+
+Spring Data Redis lets you easily implement domain entities, as shown in the following example:
+
+.Sample Person Entity
+====
+[source,java]
+----
+@RedisHash("people")
+public class Person {
+
+  @Id String id;
+  String firstname;
+  String lastname;
+  Address address;
+}
+----
+====
+
+We have a pretty simple domain object here. Note that it has a `@RedisHash` annotation on its type and a property named `id` that is annotated with `org.springframework.data.annotation.Id`. Those two items are responsible for creating the actual key used to persist the hash.
+
+NOTE: Properties annotated with `@Id` as well as those named `id` are considered as the identifier properties. Those with the annotation are favored over others.
+
+To now actually have a component responsible for storage and retrieval, we need to define a repository interface, as shown in the following example:
+
+.Basic Repository Interface To Persist Person Entities
+====
+[source,java]
+----
+public interface PersonRepository extends CrudRepository<Person, String> {
+
+}
+----
+====
+
+As our repository extends `CrudRepository`, it provides basic CRUD and finder operations. The thing we need in between to glue things together is the corresponding Spring configuration, shown in the following example:
+
+.JavaConfig for Redis Repositories
+====
+[source,java]
+----
+@Configuration
+@EnableRedisRepositories
+public class ApplicationConfig {
+
+  @Bean
+  public RedisConnectionFactory connectionFactory() {
+    return new JedisConnectionFactory();
+  }
+
+  @Bean
+  public RedisTemplate<?, ?> redisTemplate() {
+
+    RedisTemplate<byte[], byte[]> template = new RedisTemplate<byte[], byte[]>();
+    return template;
+  }
+}
+----
+====
+
+Given the preceding setup, we can inject `PersonRepository` into our components, as shown in the following example:
+
+.Access to Person Entities
+====
+[source,java]
+----
+@Autowired PersonRepository repo;
+
+public void basicCrudOperations() {
+
+  Person rand = new Person("rand", "al'thor");
+  rand.setAddress(new Address("emond's field", "andor"));
+
+  repo.save(rand);                                         <1>
+
+  repo.findOne(rand.getId());                              <2>
+
+  repo.count();                                            <3>
+
+  repo.delete(rand);                                       <4>
+}
+----
+<1> Generates a new `id` if the current value is `null` or reuses an already set `id` value and stores properties of type `Person` inside the Redis Hash with a key that has a pattern of `keyspace:id` -- in this case, it might be `people:5d67b7e1-8640-4475-beeb-c666fab4c0e5`.
+<2> Uses the provided `id` to retrieve the object stored at `keyspace:id`.
+<3> Counts the total number of entities available within the keyspace, `people`, defined by `@RedisHash` on `Person`.
+<4> Removes the key for the given object from Redis.
+====
+

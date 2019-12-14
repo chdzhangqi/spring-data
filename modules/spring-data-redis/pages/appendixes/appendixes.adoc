@@ -1,0 +1,7 @@
+include::page$attributes.adoc[]
+[[appendixes]]
+= Appendixes
+
+:numbered!:
+[[appendix:schema]]
+[[appendix:command-reference]]

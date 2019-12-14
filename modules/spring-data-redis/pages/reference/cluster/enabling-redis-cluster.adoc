@@ -1,0 +1,63 @@
+include::page$attributes.adoc[]
+
+== Enabling Redis Cluster
+
+Cluster support is based on the same building blocks as non-clustered communication. `RedisClusterConnection`, an extension to `RedisConnection`, handles the communication with the Redis Cluster and translates errors into the Spring DAO exception hierarchy.
+`RedisClusterConnection` instances are created with the `RedisConnectionFactory`, which has to be set up with the associated `RedisClusterConfiguration`, as shown in the following example:
+
+.Sample RedisConnectionFactory Configuration for Redis Cluster
+====
+[source,java]
+----
+@Component
+@ConfigurationProperties(prefix = "spring.redis.cluster")
+public class ClusterConfigurationProperties {
+
+    /*
+     * spring.redis.cluster.nodes[0] = 127.0.0.1:7379
+     * spring.redis.cluster.nodes[1] = 127.0.0.1:7380
+     * ...
+     */
+    List<String> nodes;
+
+    /**
+     * Get initial collection of known cluster nodes in format {@code host:port}.
+     *
+     * @return
+     */
+    public List<String> getNodes() {
+        return nodes;
+    }
+
+    public void setNodes(List<String> nodes) {
+        this.nodes = nodes;
+    }
+}
+
+@Configuration
+public class AppConfig {
+
+    /**
+     * Type safe representation of application.properties
+     */
+    @Autowired ClusterConfigurationProperties clusterProperties;
+
+    public @Bean RedisConnectionFactory connectionFactory() {
+
+        return new JedisConnectionFactory(
+            new RedisClusterConfiguration(clusterProperties.getNodes()));
+    }
+}
+----
+====
+
+[TIP]
+====
+`RedisClusterConfiguration` can also be defined through `PropertySource` and has the following properties:
+
+.Configuration Properties
+- `spring.redis.cluster.nodes`: Comma-delimited list of host:port pairs.
+- `spring.redis.cluster.max-redirects`: Number of allowed cluster redirections.
+====
+
+NOTE: The initial configuration points driver libraries to an initial set of cluster nodes. Changes resulting from live cluster reconfiguration are kept only in the native driver and are not written back to the configuration.

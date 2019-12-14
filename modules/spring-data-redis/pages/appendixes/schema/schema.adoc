@@ -1,0 +1,5 @@
+include::page$attributes.adoc[]
+[appendix]
+= Schema
+
+link:http://www.springframework.org/schema/redis/spring-redis-1.0.xsd[Spring Data Redis Schema (redis-namespace)]

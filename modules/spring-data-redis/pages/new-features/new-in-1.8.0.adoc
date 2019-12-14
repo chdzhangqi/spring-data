@@ -1,0 +1,13 @@
+include::page$attributes.adoc[]
+[[new-in-1.8.0]]
+== New in Spring Data Redis 1.8
+
+* Upgrade to Jedis 2.9.
+* Upgrade to `Lettuce` 4.2 (Note: Lettuce 4.2 requires Java 8).
+* Support for Redis http://redis.io/commands#geo[GEO] commands.
+* Support for Geospatial Indexes using Spring Data Repository abstractions (see xref:redis.repositories:redis.repositories.indexes.adoc#redis.repositories.indexes.geospatial[redis.repositories.indexes.geospatial]).
+* `MappingRedisConverter`-based `HashMapper` implementation (see xref:redis:redis.hashmappers.root.adoc#redis.hashmappers.root[redis.hashmappers.root]).
+* Support for `PartialUpdate` in repositories (see xref:redis.repositories:redis.repositories.partial-updates.adoc#redis.repositories.partial-updates[redis.repositories.partial-updates]).
+* SSL support for connections to Redis cluster.
+* Support for `client name` through `ConnectionFactory` when using Jedis.
+

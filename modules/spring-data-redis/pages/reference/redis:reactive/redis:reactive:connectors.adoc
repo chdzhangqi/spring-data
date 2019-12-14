@@ -1,0 +1,57 @@
+include::page$attributes.adoc[]
+[[redis:reactive:connectors]]
+== Connecting to Redis by Using a Reactive Driver
+
+One of the first tasks when using Redis and Spring is to connect to the store through the IoC container. To do that, a Java connector (or binding) is required. No matter the library you choose, you must use the `org.springframework.data.redis.connection` package and its `ReactiveRedisConnection` and `ReactiveRedisConnectionFactory` interfaces to work with and retrieve active `connections` to Redis.
+
+[[redis:reactive:connectors:operation-modes]]
+=== Redis Operation Modes
+
+Redis can be run as a standalone server, with xref:redis:redis:sentinel.adoc#redis:sentinel[Redis Sentinel], or in xref:cluster:cluster.adoc#cluster[Redis Cluster] mode.
+http://github.com/lettuce-io/lettuce-core[Lettuce] supports all of the previously mentioned connection types.
+
+[[redis:reactive:connectors:connection]]
+=== `ReactiveRedisConnection` and `ReactiveRedisConnectionFactory`
+
+`ReactiveRedisConnection` is the core of Redis communication, as it handles the communication with the Redis back-end. It also automatically translates the underlying driver exceptions to Spring's consistent DAO exception http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/data-access.html#dao-exceptions[hierarchy], so you can switch the connectors without any code changes, as the operation semantics remain the same.
+
+`ReactiveRedisConnectionFactory` creates active `ReactiveRedisConnection` instances. In addition, the factories act as `PersistenceExceptionTranslator` instances, meaning that, once declared, they let you do transparent exception translation -- for example, exception translation through the use of the `@Repository` annotation and AOP. For more information, see the dedicated http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/data-access.html#orm-exception-translation[section] in the Spring Framework documentation.
+
+NOTE: Depending on the underlying configuration, the factory can return a new connection or an existing connection (in case a pool or shared native connection is used).
+
+TIP: The easiest way to work with a `ReactiveRedisConnectionFactory` is to configure the appropriate connector through the IoC container and inject it into the using class.
+
+[[redis:reactive:connectors:lettuce]]
+=== Configuring a Lettuce Connector
+
+https://github.com/lettuce-io/lettuce-core[Lettuce] is supported by Spring Data Redis through the `org.springframework.data.redis.connection.lettuce` package.
+
+You can set up `ReactiveRedisConnectionFactory` for Lettuce as follows:
+
+[source,java]
+----
+@Bean
+public ReactiveRedisConnectionFactory connectionFactory() {
+  return new LettuceConnectionFactory("localhost", 6379);
+}
+----
+
+The following example shows a more sophisticated configuration, including SSL and timeouts, that uses `LettuceClientConfigurationBuilder`:
+
+[source,java]
+----
+@Bean
+public ReactiveRedisConnectionFactory lettuceConnectionFactory() {
+
+  LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+    .useSsl().and()
+    .commandTimeout(Duration.ofSeconds(2))
+    .shutdownTimeout(Duration.ZERO)
+    .build();
+
+  return new LettuceConnectionFactory(new RedisStandaloneConfiguration("localhost", 6379), clientConfig);
+}
+----
+
+For more detailed client configuration tweaks, see https://docs.spring.io/spring-data/redis/docs/{revnumber}/api/org/springframework/data/redis/connection/lettuce/LettuceClientConfiguration.html[`LettuceClientConfiguration`].
+

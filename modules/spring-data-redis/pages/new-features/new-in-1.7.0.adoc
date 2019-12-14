@@ -1,0 +1,7 @@
+include::page$attributes.adoc[]
+[[new-in-1.7.0]]
+== New in Spring Data Redis 1.7
+
+* Support for http://redis.io/topics/cluster-tutorial[RedisCluster].
+* Support for Spring Data Repository abstractions (see xref:redis.repositories:redis.repositories.adoc#redis.repositories[redis.repositories]).
+

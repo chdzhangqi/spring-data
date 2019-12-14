@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[new-features]]
+= New Features
+
+This section briefly covers items that are new and noteworthy in the latest releases.
+

@@ -1,0 +1,69 @@
+include::page$attributes.adoc[]
+[[redis:reactive:template]]
+== Working with Objects through ReactiveRedisTemplate
+
+Most users are likely to use `ReactiveRedisTemplate` and its corresponding package, `org.springframework.data.redis.core`. Due to its rich feature set, the template is, in fact, the central class of the Redis module. The template offers a high-level abstraction for Redis interactions. While `ReactiveRedisConnection` offers low-level methods that accept and return binary values (`ByteBuffer`), the template takes care of serialization and connection management, freeing you from dealing with such details.
+
+Moreover, the template provides operation views (following the grouping from Redis command http://redis.io/commands[reference]) that offer rich, generified interfaces for working against a certain type as described in the following table:
+
+.Operational views
+[width="80%",cols="<1,<2",options="header"]
+|====
+|Interface
+|Description
+
+2+^|_Key Type Operations_
+
+|ReactiveGeoOperations
+|Redis geospatial operations such as `GEOADD`, `GEORADIUS`, and others)
+
+|ReactiveHashOperations
+|Redis hash operations
+
+|ReactiveHyperLogLogOperations
+|Redis HyperLogLog operations such as (`PFADD`, `PFCOUNT`, and others)
+
+|ReactiveListOperations
+|Redis list operations
+
+|ReactiveSetOperations
+|Redis set operations
+
+|ReactiveValueOperations
+|Redis string (or value) operations
+
+|ReactiveZSetOperations
+|Redis zset (or sorted set) operations
+|====
+
+Once configured, the template is thread-safe and can be reused across multiple instances.
+
+`ReactiveRedisTemplate` uses a Java-based serializer for most of its operations. This means that any object written or read by the template is serialized or deserialized through `RedisElementWriter` or `RedisElementReader`. The serialization context is passed to the template upon construction, and the Redis module offers several implementations available in the `org.springframework.data.redis.serializer` package. See xref:redis:redis:serializer.adoc#redis:serializer[redis:serializer] for more information.
+
+The following example shows a `ReactiveRedisTemplate` being used to return a `Mono`:
+
+[source,java]
+----
+@Configuration
+class RedisConfiguration {
+
+  @Bean
+  ReactiveRedisTemplate<String, String> reactiveRedisTemplate(ReactiveRedisConnectionFactory factory) {
+    return new ReactiveRedisTemplate<>(factory, RedisSerializationContext.string());
+  }
+}
+----
+
+[source,java]
+----
+public class Example {
+
+  @Autowired
+  private ReactiveRedisTemplate<String, String> template;
+
+  public Mono<Long> addLink(String userId, URL url) {
+    return template.opsForList().leftPush(userId, url.toExternalForm());
+  }
+}
+----
+

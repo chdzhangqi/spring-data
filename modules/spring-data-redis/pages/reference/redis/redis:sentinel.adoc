@@ -1,0 +1,44 @@
+include::page$attributes.adoc[]
+[[redis:sentinel]]
+== Redis Sentinel Support
+
+For dealing with high-availability Redis, Spring Data Redis has support for http://redis.io/topics/sentinel[Redis Sentinel], using `RedisSentinelConfiguration`, as shown in the following example:
+
+[source,java]
+----
+/**
+ * Jedis
+ */
+@Bean
+public RedisConnectionFactory jedisConnectionFactory() {
+  RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
+  .master("mymaster")
+  .sentinel("127.0.0.1", 26379)
+  .sentinel("127.0.0.1", 26380);
+  return new JedisConnectionFactory(sentinelConfig);
+}
+
+/**
+ * Lettuce
+ */
+@Bean
+public RedisConnectionFactory lettuceConnectionFactory() {
+  RedisSentinelConfiguration sentinelConfig = new RedisSentinelConfiguration()
+  .master("mymaster")
+  .sentinel("127.0.0.1", 26379)
+  .sentinel("127.0.0.1", 26380);
+  return new LettuceConnectionFactory(sentinelConfig);
+}
+----
+
+[TIP]
+====
+`RedisSentinelConfiguration` can also be defined with a `PropertySource`, which lets you set the following properties:
+
+.Configuration Properties
+* `spring.redis.sentinel.master`: name of the master node.
+* `spring.redis.sentinel.nodes`: Comma delimited list of host:port pairs.
+====
+
+Sometimes, direct interaction with one of the Sentinels is required. Using `RedisConnectionFactory.getSentinelConnection()` or `RedisConnection.getSentinelCommands()` gives you access to the first active Sentinel configured.
+

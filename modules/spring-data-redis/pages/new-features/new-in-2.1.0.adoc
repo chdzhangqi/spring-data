@@ -1,0 +1,15 @@
+include::page$attributes.adoc[]
+[[new-in-2.1.0]]
+== New in Spring Data Redis 2.1
+
+* Unix domain socket connections using xref:redis:redis:connectors.adoc#redis:connectors:lettuce[Lettuce].
+* xref:redis:redis:connectors.adoc#redis:write-to-master-read-from-replica[Write to Master, read from Replica] support using Lettuce.
+* xref:redis.repositories:query-by-example.adoc#query-by-example[Query by Example] integration.
+* `@TypeAlias` Support for Redis repositories.
+* Cluster-wide `SCAN` using Lettuce and `SCAN` execution on a selected node supported by both drivers.
+* xref:redis:reactive:redis:reactive:pubsub.adoc#redis:reactive:pubsub[Reactive Pub/Sub] to send and receive a message stream.
+* `BITFIELD`, `BITPOS`, and `OBJECT` command support.
+* Align return types of `BoundZSetOperations` with `ZSetOperations`.
+* Reactive `SCAN`, `HSCAN`, `SSCAN`, and `ZSCAN` support.
+* Usage of `IsTrue` and `IsFalse` keywords in repository query methods.
+

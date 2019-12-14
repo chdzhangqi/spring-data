@@ -1,0 +1,22 @@
+include::page$attributes.adoc[]
+
+== Working with `RedisTemplate` and `ClusterOperations`
+
+See the xref:redis:redis:template.adoc#redis:template[redis:template] section for information about the general purpose, configuration, and usage of `RedisTemplate`.
+
+CAUTION: Be careful when setting up `RedisTemplate#keySerializer` using any of the JSON `RedisSerializers`, as changing JSON structure has immediate influence on hash slot calculation.
+
+`RedisTemplate` provides access to cluster-specific operations through the `ClusterOperations` interface, which can be obtained from `RedisTemplate.opsForCluster()`. This lets you explicitly run commands on a single node within the cluster while retaining the serialization and deserialization features configured for the template. It also provides administrative commands (such as `CLUSTER MEET`) or more high-level operations (for example, resharding).
+
+The following example shows how to access `RedisClusterConnection` with `RedisTemplate`:
+
+
+.Accessing `RedisClusterConnection` with `RedisTemplate`
+====
+[source,text]
+----
+ClusterOperations clusterOps = redisTemplate.opsForCluster();
+clusterOps.shutdown(NODE_7379);                                              <1>
+----
+<1> Shut down node at 7379 and cross fingers there is a replica in place that can take over.
+====

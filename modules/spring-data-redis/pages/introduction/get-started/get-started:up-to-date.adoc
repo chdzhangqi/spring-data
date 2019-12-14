@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[get-started:up-to-date]]
+== Following Development
+
+For information on the Spring Data source code repository, nightly builds, and snapshot artifacts, see the Spring Data home http://spring.io/spring-data[page].
+
+You can help make Spring Data best serve the needs of the Spring community by interacting with developers on Stack Overflow at either
+http://stackoverflow.com/questions/tagged/spring-data[spring-data] or http://stackoverflow.com/questions/tagged/spring-data-redis[spring-data-redis].
+
+If you encounter a bug or want to suggest an improvement (including to this documentation), please create a ticket on the Spring Data issue https://jira.spring.io/browse/DATAREDIS[tracker].
+
+To stay up to date with the latest news and announcements in the Spring eco system, subscribe to the Spring Community http://spring.io/[Portal].
+
+Lastly, you can follow the Spring http://spring.io/blog/[blog] or the project team (http://twitter.com/SpringData[@SpringData]) on Twitter.
