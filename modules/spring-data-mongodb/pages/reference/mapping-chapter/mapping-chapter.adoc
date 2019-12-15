@@ -1,0 +1,8 @@
+include::page$attributes.adoc[]
+[[mapping-chapter]]
+= Mapping
+
+Rich mapping support is provided by the `MappingMongoConverter`. `MappingMongoConverter` has a rich metadata model that provides a full feature set to map domain objects to MongoDB documents. The mapping metadata model is populated by using annotations on your domain objects. However, the infrastructure is not limited to using annotations as the only source of metadata information. The `MappingMongoConverter` also lets you map objects to documents without providing any additional metadata, by following a set of conventions.
+
+This section describes the features of the `MappingMongoConverter`, including fundamentals, how to use conventions for mapping objects to documents and how to override those conventions with annotation-based mapping metadata.
+

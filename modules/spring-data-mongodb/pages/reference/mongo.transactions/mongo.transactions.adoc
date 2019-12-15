@@ -1,0 +1,48 @@
+include::page$attributes.adoc[]
+[[mongo.transactions]]
+= MongoDB Transactions
+
+As of version 4, MongoDB supports https://www.mongodb.com/transactions[Transactions]. Transactions are built on top of xref:mongo.sessions:mongo.sessions.adoc#mongo.sessions[Sessions] and, consequently, require an active `ClientSession`.
+
+NOTE: Unless you specify a `MongoTransactionManager` within your application context, transaction support is *DISABLED*. You can use `setSessionSynchronization(ALWAYS)` to participate in ongoing non-native MongoDB transactions.
+
+To get full programmatic control over transactions, you may want to use the session callback on `MongoOperations`.
+
+The following example shows programmatic transaction control within a `SessionCallback`:
+
+.Programmatic transactions
+====
+[source,java]
+----
+ClientSession session = client.startSession(options);                   <1>
+
+template.withSession(session)
+    .execute(action -> {
+
+        session.startTransaction();                                     <2>
+
+        try {
+
+            Step step = // ...;
+            action.insert(step);
+
+            process(step);
+
+            action.update(Step.class).apply(Update.set("state", // ...
+
+            session.commitTransaction();                                <3>
+
+        } catch (RuntimeException e) {
+            session.abortTransaction();                                 <4>
+        }
+    }, ClientSession::close)                                            <5>
+----
+<1> Obtain a new `ClientSession`.
+<2> Start the transaction.
+<3> If everything works out as expected, commit the changes.
+<4> Something broke, so roll back everything.
+<5> Do not forget to close the session when done.
+====
+
+The preceding example lets you have full control over transactional behavior while using the session scoped `MongoOperations` instance within the callback to ensure the session is passed on to every server call.
+To avoid some of the overhead that comes with this approach, you can use a `TransactionTemplate` to take away some of the noise of manual transaction flow.

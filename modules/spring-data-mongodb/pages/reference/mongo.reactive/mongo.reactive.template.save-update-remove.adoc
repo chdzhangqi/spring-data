@@ -1,0 +1,76 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.template.save-update-remove]]
+== Saving, Updating, and Removing Documents
+
+`ReactiveMongoTemplate` lets you save, update, and delete your domain objects and map those objects to documents stored in MongoDB.
+
+Consider the following `Person` class:
+
+[source,java]
+----
+public class Person {
+
+  private String id;
+  private String name;
+  private int age;
+
+  public Person(String name, int age) {
+    this.name = name;
+    this.age = age;
+  }
+
+  public String getId() {
+    return id;
+  }
+  public String getName() {
+    return name;
+  }
+  public int getAge() {
+    return age;
+  }
+
+  @Override
+  public String toString() {
+    return "Person [id=" + id + ", name=" + name + ", age=" + age + "]";
+  }
+
+}
+----
+
+The following listing shows how you can save, update, and delete the `Person` object:
+
+[source,java]
+----
+public class ReactiveMongoApp {
+
+  private static final Logger log = LoggerFactory.getLogger(ReactiveMongoApp.class);
+
+  public static void main(String[] args) throws Exception {
+
+    CountDownLatch latch = new CountDownLatch(1);
+
+    ReactiveMongoTemplate mongoOps = new ReactiveMongoTemplate(MongoClients.create(), "database");
+
+    mongoOps.insert(new Person("Joe", 34)).doOnNext(person -> log.info("Insert: " + person))
+      .flatMap(person -> mongoOps.findById(person.getId(), Person.class))
+      .doOnNext(person -> log.info("Found: " + person))
+      .zipWith(person -> mongoOps.updateFirst(query(where("name").is("Joe")), update("age", 35), Person.class))
+      .flatMap(tuple -> mongoOps.remove(tuple.getT1())).flatMap(deleteResult -> mongoOps.findAll(Person.class))
+      .count().doOnSuccess(count -> {
+        log.info("Number of people: " + count);
+        latch.countDown();
+      })
+
+      .subscribe();
+
+    latch.await();
+  }
+}
+----
+
+The preceding example includes implicit conversion between a `String` and `ObjectId` (by using the `MongoConverter`) as stored in the database and recognizing a convention of the property `Id` name.
+
+NOTE: The preceding example is meant to show the use of save, update, and remove operations on `ReactiveMongoTemplate` and not to show complex mapping or chaining functionality.
+
+"`xref:mongo.core:mongo.query.adoc#mongo.query[Querying Documents]`" explains the query syntax used in the preceding example in more detail. Additional documentation can be found in xref:mongo.core:mongo-template.adoc#mongo-template[the blocking `MongoTemplate`] section.
+

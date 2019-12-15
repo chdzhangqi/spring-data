@@ -1,0 +1,297 @@
+include::page$attributes.adoc[]
+[[mapping-usage]]
+== Metadata-based Mapping
+
+To take full advantage of the object mapping functionality inside the Spring Data MongoDB support, you should annotate your mapped objects with the `@Document` annotation. Although it is not necessary for the mapping framework to have this annotation (your POJOs are mapped correctly, even without any annotations), it lets the classpath scanner find and pre-process your domain objects to extract the necessary metadata. If you do not use this annotation, your application takes a slight performance hit the first time you store a domain object, because the mapping framework needs to build up its internal metadata model so that it knows about the properties of your domain object and how to persist them. The following example shows a domain object:
+
+.Example domain object
+====
+[source,java]
+----
+package com.mycompany.domain;
+
+@Document
+public class Person {
+
+  @Id
+  private ObjectId id;
+
+  @Indexed
+  private Integer ssn;
+
+  private String firstName;
+
+  @Indexed
+  private String lastName;
+}
+----
+====
+
+IMPORTANT: The `@Id` annotation tells the mapper which property you want to use for the MongoDB `_id` property, and the `@Indexed` annotation tells the mapping framework to call `createIndex(…)` on that property of your document, making searches faster.
+
+IMPORTANT: Automatic index creation is only done for types annotated with `@Document`.
+
+[[mapping-usage-annotations]]
+=== Mapping Annotation Overview
+
+The MappingMongoConverter can use metadata to drive the mapping of objects to documents. The following annotations are available:
+
+* `@Id`: Applied at the field level to mark the field used for identity purpose.
+* `@Document`: Applied at the class level to indicate this class is a candidate for mapping to the database. You can specify the name of the collection where the database will be stored.
+* `@DBRef`: Applied at the field to indicate it is to be stored using a com.mongodb.DBRef.
+* `@Indexed`: Applied at the field level to describe how to index the field.
+* `@CompoundIndex`: Applied at the type level to declare Compound Indexes
+* `@GeoSpatialIndexed`: Applied at the field level to describe how to geoindex the field.
+* `@TextIndexed`: Applied at the field level to mark the field to be included in the text index.
+* `@Language`: Applied at the field level to set the language override property for text index.
+* `@Transient`: By default all private fields are mapped to the document, this annotation excludes the field where it is applied from being stored in the database
+* `@PersistenceConstructor`: Marks a given constructor - even a package protected one - to use when instantiating the object from the database. Constructor arguments are mapped by name to the key values in the retrieved Document.
+* `@Value`: This annotation is part of the Spring Framework . Within the mapping framework it can be applied to constructor arguments. This lets you use a Spring Expression Language statement to transform a key's value retrieved in the database before it is used to construct a domain object. In order to reference a property of a given document one has to use expressions like: `@Value("#root.myProperty")` where `root` refers to the root of the given document.
+* `@Field`: Applied at the field level and described the name of the field as it will be represented in the MongoDB BSON document thus allowing the name to be different than the fieldname of the class.
+* `@Version`: Applied at field level is used for optimistic locking and checked for modification on save operations. The initial value is `zero` which is bumped automatically on every update.
+
+The mapping metadata infrastructure is defined in a separate spring-data-commons project that is technology agnostic. Specific subclasses are using in the MongoDB support to support annotation based metadata. Other strategies are also possible to put in place if there is demand.
+
+Here is an example of a more complex mapping.
+
+[source,java]
+----
+@Document
+@CompoundIndexes({
+    @CompoundIndex(name = "age_idx", def = "{'lastName': 1, 'age': -1}")
+})
+public class Person<T extends Address> {
+
+  @Id
+  private String id;
+
+  @Indexed(unique = true)
+  private Integer ssn;
+
+  @Field("fName")
+  private String firstName;
+
+  @Indexed
+  private String lastName;
+
+  private Integer age;
+
+  @Transient
+  private Integer accountTotal;
+
+  @DBRef
+  private List<Account> accounts;
+
+  private T address;
+
+
+  public Person(Integer ssn) {
+    this.ssn = ssn;
+  }
+
+  @PersistenceConstructor
+  public Person(Integer ssn, String firstName, String lastName, Integer age, T address) {
+    this.ssn = ssn;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.age = age;
+    this.address = address;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  // no setter for Id.  (getter is only exposed for some unit testing)
+
+  public Integer getSsn() {
+    return ssn;
+  }
+
+// other getters/setters omitted
+----
+
+[[mapping-custom-object-construction]]
+=== Customized Object Construction
+
+The mapping subsystem allows the customization of the object construction by annotating a constructor with the `@PersistenceConstructor` annotation. The values to be used for the constructor parameters are resolved in the following way:
+
+* If a parameter is annotated with the `@Value` annotation, the given expression is evaluated and the result is used as the parameter value.
+* If the Java type has a property whose name matches the given field of the input document, then it's property information is used to select the appropriate constructor parameter to pass the input field value to. This works only if the parameter name information is present in the java `.class` files which can be achieved by compiling the source with debug information or using the new `-parameters` command-line switch for javac in Java 8.
+* Otherwise a `MappingException` will be thrown indicating that the given constructor parameter could not be bound.
+
+[source,java]
+----
+class OrderItem {
+
+  private @Id String id;
+  private int quantity;
+  private double unitPrice;
+
+  OrderItem(String id, @Value("#root.qty ?: 0") int quantity, double unitPrice) {
+    this.id = id;
+    this.quantity = quantity;
+    this.unitPrice = unitPrice;
+  }
+
+  // getters/setters ommitted
+}
+
+Document input = new Document("id", "4711");
+input.put("unitPrice", 2.5);
+input.put("qty",5);
+OrderItem item = converter.read(OrderItem.class, input);
+----
+
+NOTE: The SpEL expression in the `@Value` annotation of the `quantity` parameter falls back to the value `0` if the given property path cannot be resolved.
+
+Additional examples for using the `@PersistenceConstructor` annotation can be found in the https://github.com/spring-projects/spring-data-mongodb/blob/master/spring-data-mongodb/src/test/java/org/springframework/data/mongodb/core/convert/MappingMongoConverterUnitTests.java[MappingMongoConverterUnitTests] test suite.
+
+[[mapping-usage-indexes.compound-index]]
+=== Compound Indexes
+
+Compound indexes are also supported. They are defined at the class level, rather than on individual properties.
+
+NOTE: Compound indexes are very important to improve the performance of queries that involve criteria on multiple fields
+
+Here's an example that creates a compound index of `lastName` in ascending order and `age` in descending order:
+
+.Example Compound Index Usage
+====
+[source,java]
+----
+package com.mycompany.domain;
+
+@Document
+@CompoundIndexes({
+    @CompoundIndex(name = "age_idx", def = "{'lastName': 1, 'age': -1}")
+})
+public class Person {
+
+  @Id
+  private ObjectId id;
+  private Integer age;
+  private String firstName;
+  private String lastName;
+
+}
+----
+====
+
+[[mapping-usage-indexes.text-index]]
+=== Text Indexes
+
+NOTE: The text index feature is disabled by default for mongodb v.2.4.
+
+Creating a text index allows accumulating several fields into a searchable full-text index. It is only possible to have one text index per collection, so all fields marked with `@TextIndexed` are combined into this index. Properties can be weighted to influence the document score for ranking results. The default language for the text index is English. To change the default language, set the `language` attribute to whichever language you want (for example,`@Document(language="spanish")`). Using a property called `language` or `@Language` lets you define a language override on a per document base. The following example shows how to created a text index and set the language to Spanish:
+
+.Example Text Index Usage
+====
+[source,java]
+----
+@Document(language = "spanish")
+class SomeEntity {
+
+    @TextIndexed String foo;
+
+    @Language String lang;
+
+    Nested nested;
+}
+
+class Nested {
+
+    @TextIndexed(weight=5) String bar;
+    String roo;
+}
+----
+====
+
+[[mapping-usage-references]]
+=== Using DBRefs
+
+The mapping framework does not have to store child objects embedded within the document. You can also store them separately and use a DBRef to refer to that document. When the object is loaded from MongoDB, those references are eagerly resolved so that you get back a mapped object that looks the same as if it had been stored embedded within your master document.
+
+The following example uses a DBRef to refer to a specific document that exists independently of the object in which it is referenced (both classes are shown in-line for brevity's sake):
+
+====
+[source,java]
+----
+@Document
+public class Account {
+
+  @Id
+  private ObjectId id;
+  private Float total;
+}
+
+@Document
+public class Person {
+
+  @Id
+  private ObjectId id;
+  @Indexed
+  private Integer ssn;
+  @DBRef
+  private List<Account> accounts;
+}
+----
+====
+
+You need not use `@OneToMany` or similar mechanisms because the List of objects tells the mapping framework that you want a one-to-many relationship. When the object is stored in MongoDB, there is a list of DBRefs rather than the `Account` objects themselves.
+When it comes to loading collections of ``DBRef``s it is advisable to restrict references held in collection types to a specific MongoDB collection. This allows bulk loading of all references, whereas references pointing to different MongoDB collections need to be resolved one by one.
+
+IMPORTANT: The mapping framework does not handle cascading saves. If you change an `Account` object that is referenced by a `Person` object, you must save the `Account` object separately. Calling `save` on the `Person` object does not automatically save the `Account` objects in the `accounts` property.
+
+``DBRef``s can also be resolved lazily. In this case the actual `Object` or `Collection` of references is resolved on first access of the property. Use the `lazy` attribute of `@DBRef` to specify this.
+Required properties that are also defined as lazy loading ``DBRef`` and used as constructor arguments are also decorated with the lazy loading proxy making sure to put as little pressure on the database and network as possible.
+
+[[mapping-usage-events]]
+=== Mapping Framework Events
+
+Events are fired throughout the lifecycle of the mapping process. This is described in the xref:mongo.core:mongodb.mapping-usage.events.adoc#mongodb.mapping-usage.events[Lifecycle Events] section.
+
+Declaring these beans in your Spring ApplicationContext causes them to be invoked whenever the event is dispatched.
+
+[[mapping-explicit-converters]]
+=== Overriding Mapping with Explicit Converters
+
+When storing and querying your objects, it is convenient to have a `MongoConverter` instance handle the mapping of all Java types to `Document` instances. However, sometimes you may want the `MongoConverter` instances do most of the work but let you selectively handle the conversion for a particular type -- perhaps to optimize performance.
+
+To selectively handle the conversion yourself, register one or more one or more `org.springframework.core.convert.converter.Converter` instances with the `MongoConverter`.
+
+NOTE: Spring 3.0 introduced a core.convert package that provides a general type conversion system. This is described in detail in the Spring reference documentation section entitled http://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference/core.html#validation["`Spring Type Conversion`"].
+
+You can use the `customConversions` method in `AbstractMongoConfiguration` to configure converters. The examples xref:mapping-chapter:mapping-configuration.adoc#mapping-configuration[at the beginning of this chapter] show how to perform the configuration using Java and XML.
+
+The following example of a Spring Converter implementation converts from a `Document` to a `Person` POJO:
+
+[source,java]
+----
+@ReadingConverter
+ public class PersonReadConverter implements Converter<Document, Person> {
+
+  public Person convert(Document source) {
+    Person p = new Person((ObjectId) source.get("_id"), (String) source.get("name"));
+    p.setAge((Integer) source.get("age"));
+    return p;
+  }
+}
+----
+
+The following example converts from a `Person` to a `Document`:
+
+[source,java]
+----
+@WritingConverter
+public class PersonWriteConverter implements Converter<Person, Document> {
+
+  public Document convert(Person source) {
+    Document document = new Document();
+    document.put("_id", source.getId());
+    document.put("name", source.getFirstName());
+    document.put("age", source.getAge());
+    return document;
+  }
+}
+----

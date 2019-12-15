@@ -1,0 +1,4 @@
+include::page$attributes.adoc[]
+[[mongo.repositories]]
+= MongoDB Repositories
+

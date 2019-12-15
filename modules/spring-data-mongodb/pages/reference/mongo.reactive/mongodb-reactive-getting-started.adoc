@@ -1,0 +1,122 @@
+include::page$attributes.adoc[]
+[[mongodb-reactive-getting-started]]
+== Getting Started
+
+Spring MongoDB support requires MongoDB 2.6 or higher and Java SE 8 or higher.
+
+First, you need to set up a running MongoDB server. Refer to the http://docs.mongodb.org/manual/core/introduction/[MongoDB Quick Start guide] for an explanation on how to startup a MongoDB instance. Once installed, starting MongoDB is typically a matter of executing the following command: `${MONGO_HOME}/bin/mongod`
+
+To create a Spring project in STS, go to File -> New -> Spring Template Project -> Simple Spring Utility Project and press Yes when prompted. Then enter a project and a package name, such as org.spring.mongodb.example.
+
+Then add the following to the pom.xml dependencies section.
+
+[source,xml,subs="+attributes"]
+----
+<dependencies>
+
+  <!-- other dependency elements omitted -->
+
+  <dependency>
+    <groupId>org.springframework.data</groupId>
+    <artifactId>spring-data-mongodb</artifactId>
+    <version>{version}</version>
+  </dependency>
+
+  <dependency>
+    <groupId>org.mongodb</groupId>
+    <artifactId>mongodb-driver-reactivestreams</artifactId>
+    <version>{mongo-reactivestreams}</version>
+  </dependency>
+
+  <dependency>
+    <groupId>io.projectreactor</groupId>
+    <artifactId>reactor-core</artifactId>
+    <version>{reactor}</version>
+  </dependency>
+
+</dependencies>
+----
+
+NOTE: MongoDB uses two different drivers for blocking and reactive (non-blocking) data access. While blocking operations are provided by default, you can opt-in for reactive usage.
+
+To get started with a working example, create a simple `Person` class to persist, as follows:
+
+[source,java]
+----
+@Document
+public class Person {
+
+  private String id;
+  private String name;
+  private int age;
+
+  public Person(String name, int age) {
+    this.name = name;
+    this.age = age;
+  }
+
+  public String getId() {
+    return id;
+  }
+  public String getName() {
+    return name;
+  }
+  public int getAge() {
+    return age;
+  }
+
+  @Override
+  public String toString() {
+    return "Person [id=" + id + ", name=" + name + ", age=" + age + "]";
+  }
+}
+----
+
+Then create an application to run, as follows:
+
+[source,java]
+----
+public class ReactiveMongoApp {
+
+  private static final Logger log = LoggerFactory.getLogger(ReactiveMongoApp.class);
+
+  public static void main(String[] args) throws Exception {
+
+    CountDownLatch latch = new CountDownLatch(1);
+
+    ReactiveMongoTemplate mongoOps = new ReactiveMongoTemplate(MongoClients.create(), "database");
+
+    mongoOps.insert(new Person("Joe", 34))
+          .flatMap(p -> mongoOps.findOne(new Query(where("name").is("Joe")), Person.class))
+          .doOnNext(person -> log.info(person.toString()))
+          .flatMap(person -> mongoOps.dropCollection("person"))
+          .doOnComplete(latch::countDown)
+          .subscribe();
+
+    latch.await();
+  }
+}
+----
+
+Running the preceding class produces the following output:
+
+[source]
+----
+2016-09-20 14:56:57,373 DEBUG .index.MongoPersistentEntityIndexCreator: 124 - Analyzing class class example.ReactiveMongoApp$Person for index information.
+2016-09-20 14:56:57,452 DEBUG .data.mongodb.core.ReactiveMongoTemplate: 975 - Inserting Document containing fields: [_class, name, age] in collection: person
+2016-09-20 14:56:57,541 DEBUG .data.mongodb.core.ReactiveMongoTemplate:1503 - findOne using query: { "name" : "Joe"} fields: null for class: class example.ReactiveMongoApp$Person in collection: person
+2016-09-20 14:56:57,545 DEBUG .data.mongodb.core.ReactiveMongoTemplate:1979 - findOne using query: { "name" : "Joe"} in db.collection: database.person
+2016-09-20 14:56:57,567  INFO                 example.ReactiveMongoApp:  43 - Person [id=57e1321977ac501c68d73104, name=Joe, age=34]
+2016-09-20 14:56:57,573 DEBUG .data.mongodb.core.ReactiveMongoTemplate: 528 - Dropped collection [person]
+----
+
+Even in this simple example, there are a few things to take notice of:
+
+* You can instantiate the central helper class of Spring Mongo (xref:mongo.reactive:mongo.reactive.template.adoc#mongo.reactive.template[`ReactiveMongoTemplate`]) by using the standard `com.mongodb.reactivestreams.client.MongoClient` object and the name of the database to use.
+* The mapper works against standard POJO objects without the need for any additional metadata (though you can optionally provide that information. See xref:mapping-chapter:mapping-chapter.adoc#mapping-chapter[here].).
+* Conventions are used for handling the ID field, converting it to be an `ObjectId` when stored in the database.
+* Mapping conventions can use field access. Notice that the `Person` class has only getters.
+* If the constructor argument names match the field names of the stored document, they are used to instantiate the object
+
+There is a https://github.com/spring-projects/spring-data-examples[GitHub repository with several examples] that you can download and play around with to get a feel for how the library works.
+

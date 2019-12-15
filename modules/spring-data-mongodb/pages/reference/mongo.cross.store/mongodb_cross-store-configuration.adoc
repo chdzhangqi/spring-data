@@ -1,0 +1,152 @@
+include::page$attributes.adoc[]
+[[mongodb_cross-store-configuration]]
+== Cross Store Configuration
+
+Assuming that you have a working JPA application and would like to add some cross-store persistence for MongoDB, what do you have to add to your configuration?
+
+First, you need to add a dependency on the cross-store module. If you use Maven, you can add the following dependency to your pom:
+
+.Example Maven pom.xml with `spring-data-mongodb-cross-store` dependency
+====
+[source,xml]
+----
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  ...
+
+    <!-- Spring Data -->
+    <dependency>
+      <groupId>org.springframework.data</groupId>
+      <artifactId>spring-data-mongodb-cross-store</artifactId>
+      <version>${spring.data.mongo.version}</version>
+    </dependency>
+
+  ...
+
+</project>
+----
+====
+
+Once you have added the dependency, you need to enable AspectJ for the project. The cross-store support is implemented with AspectJ aspects so, if you enable compile-time AspectJ support, the cross-store features become available to your project. In Maven, you would add an additional plugin to the `<build>` section of the pom, as follows:
+
+.Example Maven pom.xml with AspectJ plugin enabled
+====
+[source,xml]
+----
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  ...
+
+  <build>
+    <plugins>
+
+      …
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>aspectj-maven-plugin</artifactId>
+        <version>1.0</version>
+        <dependencies>
+          <!-- NB: You must use Maven 2.0.9 or above or these are ignored (see MNG-2972) -->
+          <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>${aspectj.version}</version>
+          </dependency>
+          <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjtools</artifactId>
+            <version>${aspectj.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>test-compile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <outxml>true</outxml>
+          <aspectLibraries>
+            <aspectLibrary>
+              <groupId>org.springframework</groupId>
+              <artifactId>spring-aspects</artifactId>
+            </aspectLibrary>
+            <aspectLibrary>
+              <groupId>org.springframework.data</groupId>
+              <artifactId>spring-data-mongodb-cross-store</artifactId>
+            </aspectLibrary>
+          </aspectLibraries>
+          <source>1.6</source>
+          <target>1.6</target>
+        </configuration>
+      </plugin>
+
+      ...
+
+    </plugins>
+  </build>
+
+...
+
+</project>
+----
+====
+
+Finally, you need to configure your project to use MongoDB and also configure which aspects are used. You should add the following XML snippet to your application context:
+
+.Example application context with MongoDB and cross-store aspect support
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+  xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+  xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+  xsi:schemaLocation="http://www.springframework.org/schema/data/mongo
+    http://www.springframework.org/schema/data/mongo/spring-mongo.xsd
+    http://www.springframework.org/schema/jdbc
+    http://www.springframework.org/schema/jdbc/spring-jdbc-3.0.xsd
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/data/jpa
+    http://www.springframework.org/schema/data/jpa/spring-jpa-1.0.xsd">
+
+  ...
+
+  <!--  Mongo config -->
+  <mongo:mongo-client host="localhost" port="27017"/>
+
+  <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+    <constructor-arg name="mongoClient" ref="mongoClient"/>
+    <constructor-arg name="databaseName" value="test"/>
+    <constructor-arg name="defaultCollectionName" value="cross-store"/>
+  </bean>
+
+  <bean class="org.springframework.data.mongodb.core.MongoExceptionTranslator"/>
+
+  <!--  Mongo cross-store aspect config -->
+  <bean class="org.springframework.data.persistence.document.mongo.MongoDocumentBacking"
+        factory-method="aspectOf">
+    <property name="changeSetPersister" ref="mongoChangeSetPersister"/>
+  </bean>
+  <bean id="mongoChangeSetPersister"
+      class="org.springframework.data.persistence.document.mongo.MongoChangeSetPersister">
+    <property name="mongoTemplate" ref="mongoTemplate"/>
+    <property name="entityManagerFactory" ref="entityManagerFactory"/>
+  </bean>
+
+  ...
+
+</beans>
+----
+====
+

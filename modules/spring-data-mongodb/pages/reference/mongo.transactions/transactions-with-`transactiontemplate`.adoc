@@ -1,0 +1,36 @@
+include::page$attributes.adoc[]
+
+== Transactions with `TransactionTemplate`
+
+Spring Data MongoDB transactions support a `TransactionTemplate`. The following example shows how to create and use a `TransactionTemplate`:
+
+.Transactions with `TransactionTemplate`
+====
+[source,java]
+----
+template.setSessionSynchronization(ALWAYS);                                     <1>
+
+// ...
+
+TransactionTemplate txTemplate = new TransactionTemplate(anyTxManager);         <2>
+
+txTemplate.execute(new TransactionCallbackWithoutResult() {
+
+    @Override
+    protected void doInTransactionWithoutResult(TransactionStatus status) {     <3>
+
+        Step step = // ...;
+        template.insert(step);
+
+        process(step);
+
+    template.update(Step.class).apply(Update.set("state", // ...
+    };
+});
+----
+<1> Enable transaction synchronization during Template API configuration.
+<2> Create the `TransactionTemplate` using the provided `PlatformTransactionManager`.
+<3> Within the callback the `ClientSession` and transaction are already registered.
+====
+
+CAUTION: Changing state of `MongoTemplate` during runtime (as you might think would be possible in item 1 of the preceding listing) can cause threading and visibility issues.

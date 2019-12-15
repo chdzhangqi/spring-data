@@ -1,0 +1,8 @@
+include::page$attributes.adoc[]
+[[mongo.cross.store]]
+= Cross Store Support
+
+WARNING: This feature has been deprecated and will be removed without replacement.
+
+Sometimes you need to store data in multiple data stores, and these data stores need to be of different types. One might be relational while the other is a document store. For this use case, we created a separate module in the MongoDB support that handles what we call "`cross-store support`". The current implementation is based on JPA as the driver for the relational database and we let select fields in the Entities be stored in a Mongo database. In addition to letting you store your data in two stores, we also coordinate persistence operations for the non-transactional MongoDB store with the transaction life-cycle for the relational database.
+

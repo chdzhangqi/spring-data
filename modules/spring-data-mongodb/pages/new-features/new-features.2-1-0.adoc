@@ -1,0 +1,17 @@
+include::page$attributes.adoc[]
+[[new-features.2-1-0]]
+== What's New in Spring Data MongoDB 2.1
+
+* Cursor-based aggregation execution.
+* xref:mongo.core:mongo.query.adoc#mongo-template.query.distinct[Distinct queries] for imperative and reactive Template APIs.
+* Support for Map/Reduce through the reactive Template API.
+* xref:mongo.mongo-3:using-spring-data-mongodb-with-mongodb-3.0.adoc#mongo.mongo-3.validation[`validator` support for collections].
+* xref:mongo.core:mongo.query.adoc#mongo.jsonSchema[`$jsonSchema` support] for queries and collection creation.
+* xref:mongo.core:gridfs.adoc#change-streams[Change Stream support] for imperative and reactive drivers.
+* xref:mongo.core:gridfs.adoc#tailable-cursors.sync[Tailable cursors] for imperative driver.
+* xref:mongo.sessions:mongo.sessions.adoc#mongo.sessions[MongoDB 3.6 Session] support for the imperative and reactive Template APIs.
+* xref:mongo.transactions:mongo.transactions.adoc#mongo.transactions[MongoDB 4.0 Transaction] support and a MongoDB-specific transaction manager implementation.
+* xref:mongo.repositories:mongodb.repositories.queries.adoc#mongodb.repositories.queries.sort[Default sort specifications for repository query methods] using `@Query(sort=…)`.
+* xref:mongo.core:mongo-template.save-update-remove.adoc#mongo-template.find-and-replace[findAndReplace] support through imperative and reactive Template APIs.
+* Deprecation of `dropDups` in `@Indexed` and `@CompoundIndex` as MongoDB server 3.0 and newer do not support `dropDups` anymore.
+

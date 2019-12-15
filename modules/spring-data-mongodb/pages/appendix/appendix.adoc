@@ -1,0 +1,8 @@
+include::page$attributes.adoc[]
+[[appendix]]
+= Appendix
+
+[[repositories.namespace-reference]]
+[[populator.namespace-reference]]
+[[repository-query-keywords]]
+[appendix]

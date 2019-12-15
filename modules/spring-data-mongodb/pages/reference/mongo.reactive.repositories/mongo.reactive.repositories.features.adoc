@@ -1,0 +1,82 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.repositories.features]]
+== Features
+
+Spring Data's Reactive MongoDB support comes with a reduced feature set compared to the blocking xref:mongo.repositories:mongo.repositories.adoc#mongo.repositories[MongoDB Repositories].
+
+It supports the following features:
+
+* Query Methods using xref:mongo.repositories:mongodb.repositories.queries.adoc#mongodb.repositories.queries[String queries and Query Derivation]
+* xref:mongo.reactive.repositories:mongo.reactive.repositories.features.adoc#mongodb.reactive.repositories.queries.geo-spatial[mongodb.reactive.repositories.queries.geo-spatial]
+* xref:mongo.repositories:mongodb.repositories.queries.adoc#mongodb.repositories.queries.delete[mongodb.repositories.queries.delete]
+* xref:mongo.repositories:mongodb.repositories.queries.adoc#mongodb.repositories.queries.json-based[mongodb.repositories.queries.json-based]
+* xref:mongo.repositories:mongodb.repositories.queries.adoc#mongodb.repositories.queries.full-text[mongodb.repositories.queries.full-text]
+* xref:mongo.repositories:mongodb.repositories.queries.adoc#projections[projections]
+
+WARNING: Reactive Repositories do not support type-safe query methods that use `Querydsl`.
+
+[[mongodb.reactive.repositories.queries.geo-spatial]]
+=== Geo-spatial Repository Queries
+
+As you saw earlier in "`xref:mongo.reactive.repositories:mongo.reactive.repositories.features.adoc#mongodb.reactive.repositories.queries.geo-spatial[mongodb.reactive.repositories.queries.geo-spatial]`", a few keywords trigger geo-spatial operations within a MongoDB query. The `Near` keyword allows some further modification, as the next few examples show.
+
+The following example shows how to define a `near` query that finds all persons with a given distance of a given point:
+
+.Advanced `Near` queries
+====
+[source,java]
+----
+public interface PersonRepository extends ReactiveMongoRepository<Person, String>
+
+  // { 'location' : { '$near' : [point.x, point.y], '$maxDistance' : distance}}
+  Flux<Person> findByLocationNear(Point location, Distance distance);
+}
+----
+====
+
+Adding a `Distance` parameter to the query method allows restricting results to those within the given distance. If the `Distance` was set up containing a `Metric`, we transparently use `$nearSphere` instead of `$code`, as the following example shows:
+
+.Using `Distance` with `Metrics`
+====
+[source,java]
+----
+Point point = new Point(43.7, 48.8);
+Distance distance = new Distance(200, Metrics.KILOMETERS);
+… = repository.findByLocationNear(point, distance);
+// {'location' : {'$nearSphere' : [43.7, 48.8], '$maxDistance' : 0.03135711885774796}}
+----
+====
+
+NOTE: Reactive Geo-spatial repository queries support the domain type and `GeoResult<T>` results within a reactive wrapper type. `GeoPage` and `GeoResults` are not supported as they contradict the deferred result approach with pre-calculating the average distance. Howevery, you can still pass in a `Pageable` argument to page results yourself.
+
+Using a `Distance` with a `Metric` causes a `$nearSphere` (instead of a plain `$near`) clause to be added. Beyond that, the actual distance gets calculated according to the `Metrics` used.
+
+(Note that `Metric` does not refer to metric units of measure. It could be miles rather than kilometers. Rather, `metric` refers to the concept of a system of measurement, regardless of which system you use.)
+
+NOTE: Using `@GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)` on the target property forces usage of `$nearSphere` operator.
+
+==== Geo-near Queries
+
+Spring Data MongoDB supports geo-near queries, as the following example shows:
+
+[source,java]
+----
+public interface PersonRepository extends ReactiveMongoRepository<Person, String>
+
+  // {'geoNear' : 'location', 'near' : [x, y] }
+  Flux<GeoResult<Person>> findByLocationNear(Point location);
+
+  // No metric: {'geoNear' : 'person', 'near' : [x, y], maxDistance : distance }
+  // Metric: {'geoNear' : 'person', 'near' : [x, y], 'maxDistance' : distance,
+  //          'distanceMultiplier' : metric.multiplier, 'spherical' : true }
+  Flux<GeoResult<Person>> findByLocationNear(Point location, Distance distance);
+
+  // Metric: {'geoNear' : 'person', 'near' : [x, y], 'minDistance' : min,
+  //          'maxDistance' : max, 'distanceMultiplier' : metric.multiplier,
+  //          'spherical' : true }
+  Flux<GeoResult<Person>> findByLocationNear(Point location, Distance min, Distance max);
+
+  // {'geoNear' : 'location', 'near' : [x, y] }
+  Flux<GeoResult<Person>> findByLocationNear(Point location);
+}
+----

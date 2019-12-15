@@ -1,0 +1,8 @@
+include::page$attributes.adoc[]
+[[requirements]]
+== Requirements
+
+The Spring Data MongoDB 2.x binaries require JDK level 8.0 and above and http://spring.io/docs[Spring Framework] {springVersion} and above.
+
+In terms of document stores, you need at least version 2.6 of http://www.mongodb.org/[MongoDB].
+

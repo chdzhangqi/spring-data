@@ -1,0 +1,17 @@
+include::page$attributes.adoc[]
+[[mongo.reactive]]
+= Reactive MongoDB support
+
+The reactive MongoDB support contains the following basic set of features:
+
+* Spring configuration support that uses Java-based `@Configuration` classes, a `MongoClient` instance, and replica sets.
+* `ReactiveMongoTemplate`, which is a helper class that increases productivity by using `MongoOperations` in a reactive manner. It includes integrated object mapping between `Document` instances and POJOs.
+* Exception translation into Spring's portable Data Access Exception hierarchy.
+* Feature-rich Object Mapping integrated with Spring's `ConversionService`.
+* Annotation-based mapping metadata that is extensible to support other metadata formats.
+* Persistence and mapping lifecycle events.
+* Java based `Query`, `Criteria`, and `Update` DSLs.
+* Automatic implementation of reactive repository interfaces including support for custom query methods.
+
+For most tasks, you should use `ReactiveMongoTemplate` or the repository support, both of which use the rich mapping functionality. `ReactiveMongoTemplate` is the place to look for accessing functionality such as incrementing counters or ad-hoc CRUD operations. `ReactiveMongoTemplate` also provides callback methods so that you can use the low-level API artifacts (such as `MongoDatabase`) to communicate directly with MongoDB. The goal with naming conventions on various API artifacts is to copy those in the base MongoDB Java driver so that you can map your existing knowledge onto the Spring APIs.
+

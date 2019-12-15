@@ -1,0 +1,9 @@
+include::page$attributes.adoc[]
+[[mongo.mongo-3]]
+= MongoDB 3.0 Support
+
+Spring Data MongoDB requires MongoDB Java driver generations 3 when connecting to a MongoDB 2.6/3.0 server running MMap.v1 or a MongoDB server 3.0 using MMap.v1 or the WiredTiger storage engine.
+
+NOTE: See the driver- and database-specific documentation for major differences between those engines.
+
+NOTE: Operations that are no longer valid when using a 3.x MongoDB Java driver have been deprecated within Spring Data and will be removed in a subsequent release.

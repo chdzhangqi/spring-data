@@ -1,0 +1,13 @@
+include::page$attributes.adoc[]
+[[get-started:first-steps:nosql]]
+== Learning NoSQL and Document databases
+NoSQL stores have taken the storage world by storm. It is a vast domain with a plethora of solutions, terms, and patterns (to make things worse, even the term itself has multiple http://www.google.com/search?q=nosoql+acronym[meanings]). While some of the principles are common, you must be familiar with MongoDB to some degree. The best way to get acquainted is to read the documentation and follow the examples. It usually does not take more then 5-10 minutes to go through them and, especially if you are coming from an RDMBS-only background, these exercises can be an eye opener.
+
+The starting point for learning about MongoDB is http://www.mongodb.org/[www.mongodb.org]. Here is a list of other useful resources:
+
+* The http://docs.mongodb.org/manual/[manual] introduces MongoDB and contains links to getting started guides, reference documentation, and tutorials.
+* The http://try.mongodb.org/[online shell] provides a convenient way to interact with a MongoDB instance in combination with the online http://docs.mongodb.org/manual/tutorial/getting-started/[tutorial.]
+* MongoDB http://docs.mongodb.org/ecosystem/drivers/java/[Java Language Center].
+* Several http://www.mongodb.org/books[books] you can purchase.
+* Karl Seguin's online book: http://openmymind.net/mongodb.pdf[The Little MongoDB Book].
+

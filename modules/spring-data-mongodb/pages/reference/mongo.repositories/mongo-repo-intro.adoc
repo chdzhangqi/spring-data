@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[mongo-repo-intro]]
+== Introduction
+
+This chapter points out the specialties for repository support for MongoDB. This chapter builds on the core repository support explained in xref:repositories:repositories.adoc#repositories[repositories]. You should have a sound understanding of the basic concepts explained there.
+

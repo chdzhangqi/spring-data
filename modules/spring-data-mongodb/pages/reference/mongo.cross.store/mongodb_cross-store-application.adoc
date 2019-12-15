@@ -1,0 +1,103 @@
+include::page$attributes.adoc[]
+[[mongodb_cross-store-application]]
+== Writing the Cross Store Application
+
+We assume that you have a working JPA application, so we cover only the additional steps needed to persist part of your entity in your Mongo database. To do so, you need to identify the field you want to persist. It should be a domain class and follow the general rules for the Mongo mapping support covered in previous chapters. The field you want to persist in MongoDB should be annotated with the `@RelatedDocument` annotation. That is really all you need to do. The cross-store aspects take care of the rest, including:
+
+* Marking the field with `@Transient` so that it will not be persisted by JPA
+* Keeping track of any changes made to the field value and writing them to the database on successful transaction completion
+* Loading the document from MongoDB the first time the value is used in your application.
+
+The following example shows an entity that has a field annotated with `@RelatedDocument`:
+
+.Example of Entity with @RelatedDocument
+====
+[source,java]
+----
+@Entity
+public class Customer {
+
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
+
+  private String firstName;
+
+  private String lastName;
+
+  @RelatedDocument
+  private SurveyInfo surveyInfo;
+
+  // getters and setters omitted
+}
+----
+====
+
+The following example shows a domain class that is to be stored as a `Document`:
+
+.Example of a domain class to be stored as a Document
+====
+[source,java]
+----
+public class SurveyInfo {
+
+  private Map<String, String> questionsAndAnswers;
+
+  public SurveyInfo() {
+    this.questionsAndAnswers = new HashMap<String, String>();
+  }
+
+  public SurveyInfo(Map<String, String> questionsAndAnswers) {
+    this.questionsAndAnswers = questionsAndAnswers;
+  }
+
+  public Map<String, String> getQuestionsAndAnswers() {
+    return questionsAndAnswers;
+  }
+
+  public void setQuestionsAndAnswers(Map<String, String> questionsAndAnswers) {
+    this.questionsAndAnswers = questionsAndAnswers;
+  }
+
+  public SurveyInfo addQuestionAndAnswer(String question, String answer) {
+    this.questionsAndAnswers.put(question, answer);
+    return this;
+  }
+}
+----
+====
+
+In the preceding example, once the `SurveyInfo` has been set on the `Customer` object, the `MongoTemplate` that was configured previously is used to save the `SurveyInfo` (along with some metadata about the JPA Entity) in a MongoDB collection named after the fully qualified name of the JPA Entity class. The following code shows how to configure a JPA entity for cross-store persistence with MongoDB:
+
+.Example of code using the JPA Entity configured for cross-store persistence
+====
+[source,java]
+----
+Customer customer = new Customer();
+customer.setFirstName("Sven");
+customer.setLastName("Olafsen");
+SurveyInfo surveyInfo = new SurveyInfo()
+  .addQuestionAndAnswer("age", "22")
+  .addQuestionAndAnswer("married", "Yes")
+  .addQuestionAndAnswer("citizenship", "Norwegian");
+customer.setSurveyInfo(surveyInfo);
+customerRepository.save(customer);
+----
+====
+
+Running the preceding above results in the following JSON document being stored in MongoDB:
+
+.Example of JSON document stored in MongoDB
+====
+[source,javascript]
+----
+{ "_id" : ObjectId( "4d9e8b6e3c55287f87d4b79e" ),
+  "_entity_id" : 1,
+  "_entity_class" : "org.springframework.data.mongodb.examples.custsvc.domain.Customer",
+  "_entity_field_name" : "surveyInfo",
+  "questionsAndAnswers" : { "married" : "Yes",
+    "age" : "22",
+    "citizenship" : "Norwegian" },
+  "_entity_field_class" : "org.springframework.data.mongodb.examples.custsvc.domain.SurveyInfo" }
+----
+====

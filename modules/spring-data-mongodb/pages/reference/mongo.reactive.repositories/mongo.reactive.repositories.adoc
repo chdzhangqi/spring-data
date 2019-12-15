@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.repositories]]
+= Reactive MongoDB repositories
+
+This chapter describes the specialties for reactive repository support for MongoDB. This chapter builds on the core repository support explained in xref:repositories:repositories.adoc#repositories[repositories]. You should have a sound understanding of the basic concepts explained there.
+

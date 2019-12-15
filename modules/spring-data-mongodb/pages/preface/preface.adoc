@@ -1,0 +1,10 @@
+include::page$attributes.adoc[]
+[[preface]]
+= Preface
+
+The Spring Data MongoDB project applies core Spring concepts to the development of solutions that use the MongoDB document style data store. We provide a "`template`" as a high-level abstraction for storing and querying documents. You may notice similarities to the JDBC support provided by the Spring Framework.
+
+This document is the reference guide for Spring Data - MongoDB Support. It explains MongoDB module concepts and semantics and syntax for various store namespaces.
+
+This section provides some basic introduction to Spring and Document databases. The rest of the document refers only to Spring Data MongoDB features and assumes the user is familiar with MongoDB and Spring concepts.
+

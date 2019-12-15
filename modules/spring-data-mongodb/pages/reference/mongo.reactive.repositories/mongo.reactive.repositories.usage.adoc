@@ -1,0 +1,99 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.repositories.usage]]
+== Usage
+
+To access domain entities stored in a MongoDB database, you can use our sophisticated repository support that eases implementing those quite significantly. To do so, create an interface similar for your repository. Before you can do that, though, you need an entity, such as the entity defined in the following example:
+
+.Sample `Person` entity
+====
+[source,java]
+----
+public class Person {
+
+  @Id
+  private String id;
+  private String firstname;
+  private String lastname;
+  private Address address;
+
+  // … getters and setters omitted
+}
+----
+====
+
+Note that the entity defined in the preceding example has a property named `id` of type `ObjectId`. The default serialization mechanism used in `MongoTemplate` (which backs the repository support) regards properties named `id` as the document ID. Currently, we support `String`, `ObjectId`, and `BigInteger` as id-types. The following example shows how to create an interface that defines queries against the `Person` object from the preceding example:
+
+.Basic repository interface to persist Person entities
+====
+[source]
+----
+public interface ReactivePersonRepository extends ReactiveSortingRepository<Person, String> {
+
+  Flux<Person> findByFirstname(String firstname);                                   <1>
+
+  Flux<Person> findByFirstname(Publisher<String> firstname);                        <2>
+
+  Flux<Person> findByFirstnameOrderByLastname(String firstname, Pageable pageable); <3>
+
+  Mono<Person> findByFirstnameAndLastname(String firstname, String lastname);       <4>
+
+  Mono<Person> findFirstByLastname(String lastname);                                <5>
+}
+----
+<1> The method shows a query for all people with the given `lastname`. The query is derived by parsing the method name for constraints that can be concatenated with `And` and `Or`. Thus, the method name results in a query expression of `{"lastname" : lastname}`.
+<2> The method shows a query for all people with the given `firstname` once the `firstname` is emitted by the given `Publisher`.
+<3> Use `Pageable` to pass offset and sorting parameters to the database.
+<4> Find a single entity for the given criteria. It completes with `IncorrectResultSizeDataAccessException` on non-unique results.
+<5> Unless <4>, the first entity is always emitted even if the query yields more result documents.
+====
+
+For Java configuration, use the `@EnableReactiveMongoRepositories` annotation. The annotation carries the same attributes as the namespace element. If no base package is configured, the infrastructure scans the package of the annotated configuration class.
+
+NOTE: MongoDB uses two different drivers for imperative (synchronous/blocking) and reactive (non-blocking) data access. You must create a connection by using the Reactive Streams driver to provide the required infrastructure for Spring Data's Reactive MongoDB support. Consequently, you must provide a separate configuration for MongoDB's Reactive Streams driver. Note that your application operates on two different connections if you use reactive and blocking Spring Data MongoDB templates and repositories.
+
+The following listing shows how to use Java configuration for a repository:
+
+.Java configuration for repositories
+====
+[source,java]
+----
+@Configuration
+@EnableReactiveMongoRepositories
+class ApplicationConfig extends AbstractReactiveMongoConfiguration {
+
+  @Override
+  protected String getDatabaseName() {
+    return "e-store";
+  }
+
+  @Override
+  public MongoClient reactiveMongoClient() {
+    return MongoClients.create();
+  }
+
+  @Override
+  protected String getMappingBasePackage() {
+    return "com.oreilly.springdata.mongodb"
+  }
+}
+----
+====
+
+Because our domain repository extends `ReactiveSortingRepository`, it provides you with CRUD operations as well as methods for sorted access to the entities. Working with the repository instance is a matter of dependency injecting it into a client, as the following example shows:
+
+.Sorted access to Person entities
+====
+[source,java]
+----
+public class PersonRepositoryTests {
+
+    @Autowired ReactivePersonRepository repository;
+
+    @Test
+    public void sortsElementsCorrectly() {
+      Flux<Person> persons = repository.findAll(Sort.by(new Order(ASC, "lastname")));
+    }
+}
+----
+====
+

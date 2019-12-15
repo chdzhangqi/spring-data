@@ -1,0 +1,11 @@
+include::page$attributes.adoc[]
+[[new-features.1-9-0]]
+== What's New in Spring Data MongoDB 1.9
+* The following annotations have been enabled to build your own composed annotations: `@Document`, `@Id`, `@Field`, `@Indexed`, `@CompoundIndex`, `@GeoSpatialIndexed`, `@TextIndexed`, `@Query`, and `@Meta`.
+* Support for xref:mongo.repositories:mongodb.repositories.queries.adoc#projections[projections] in repository query methods.
+* Support for xref:mongo.core:query-by-example.adoc#query-by-example[query-by-example].
+* Out-of-the-box support for `java.util.Currency` in object mapping.
+* Support for the bulk operations introduced in MongoDB 2.6.
+* Upgrade to Querydsl 4.
+* Assert compatibility with MongoDB 3.0 and MongoDB Java Driver 3.2 (see: xref:mongo.mongo-3:mongo.mongo-3.adoc#mongo.mongo-3[mongo.mongo-3]).
+

@@ -1,0 +1,24 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.executioncallback]]
+== Execution Callbacks
+
+One common design feature of all Spring template classes is that all functionality is routed into one of the templates execute callback methods. This helps ensure that exceptions and any resource management that maybe required are performed consistency. While this was of much greater need in the case of JDBC and JMS than with MongoDB, it still offers a single spot for exception translation and logging to occur. As such, using the execute callback is the preferred way to access the MongoDB driver's `MongoDatabase` and `MongoCollection` objects to perform uncommon operations that were not exposed as methods on `ReactiveMongoTemplate`.
+
+Here is a list of execute callback methods.
+
+* `<T> Flux<T>` *execute* `(Class<?> entityClass, ReactiveCollectionCallback<T> action)`: Executes the given `ReactiveCollectionCallback` for the entity collection of the specified class.
+
+* `<T> Flux<T>` *execute* `(String collectionName, ReactiveCollectionCallback<T> action)`: Executes the given `ReactiveCollectionCallback` on the collection of the given name.
+
+* `<T> Flux<T>` *execute* `(ReactiveDatabaseCallback<T> action)`: Executes a `ReactiveDatabaseCallback` translating any exceptions as necessary.
+
+The following example uses the `ReactiveCollectionCallback` to return information about an index:
+
+[source,java]
+----
+Flux<Boolean> hasIndex = operations.execute("geolocation",
+    collection -> Flux.from(collection.listIndexes(Document.class))
+      .filter(document -> document.get("name").equals("fancy-index-name"))
+      .flatMap(document -> Mono.just(true))
+      .defaultIfEmpty(false));
+----

@@ -1,0 +1,17 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.repositories.libraries]]
+== Reactive Composition Libraries
+
+The reactive space offers various reactive composition libraries. The most common libraries are https://github.com/ReactiveX/RxJava[RxJava] and https://projectreactor.io/[Project Reactor].
+
+Spring Data MongoDB is built on top of the https://mongodb.github.io/mongo-java-driver-reactivestreams/[MongoDB Reactive Streams] driver, to provide maximal interoperability by relying on the http://www.reactive-streams.org/[Reactive Streams] initiative. Static APIs, such as `ReactiveMongoOperations`, are provided by using Project Reactor's `Flux` and `Mono` types. Project Reactor offers various adapters to convert reactive wrapper types  (`Flux` to `Observable` and vice versa), but conversion can easily clutter your code.
+
+Spring Data's Repository abstraction is a dynamic API, mostly defined by you and your requirements as you declare query methods. Reactive MongoDB repositories can be implemented by using either RxJava or Project Reactor wrapper types by extending from one of the following library-specific repository interfaces:
+
+* `ReactiveCrudRepository`
+* `ReactiveSortingRepository`
+* `RxJava2CrudRepository`
+* `RxJava2SortingRepository`
+
+Spring Data converts reactive wrapper types behind the scenes so that you can stick to your favorite composition library.
+

@@ -1,0 +1,40 @@
+include::page$attributes.adoc[]
+[[mongo.sessions.sync]]
+== Synchronous `ClientSession` support.
+
+The following example shows the usage of a session:
+
+.`ClientSession` with `MongoOperations`
+====
+[source,java]
+----
+ClientSessionOptions sessionOptions = ClientSessionOptions.builder()
+    .causallyConsistent(true)
+    .build();
+
+ClientSession session = client.startSession(sessionOptions); <1>
+
+template.withSession(() -> session)
+    .execute(action -> {
+
+        Query query = query(where("name").is("Durzo Blint"));
+        Person durzo = action.findOne(query, Person.class);  <2>
+
+        Person azoth = new Person("Kylar Stern");
+        azoth.setMaster(durzo);
+
+        action.insert(azoth);                                <3>
+
+        return azoth;
+    });
+
+session.close()                                              <4>
+----
+<1> Obtain a new session from the server.
+<2> Use `MongoOperation` methods as before. The `ClientSession` gets applied automatically.
+<3> Make sure to close the `ClientSession`.
+<4> Close the session.
+====
+
+WARNING: When dealing with `DBRef` instances, especially lazily loaded ones, it is essential to *not* close the `ClientSession` before all data is loaded. Otherwise, lazy fetch fails.
+

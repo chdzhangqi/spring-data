@@ -1,0 +1,118 @@
+include::page$attributes.adoc[]
+[[mongo-repo-usage]]
+== Usage
+
+To access domain entities stored in a MongoDB, you can use our sophisticated repository support that eases implementation quite significantly. To do so, create an interface for your repository, as the following example shows:
+
+.Sample Person entity
+====
+[source,java]
+----
+public class Person {
+
+  @Id
+  private String id;
+  private String firstname;
+  private String lastname;
+  private Address address;
+
+  // … getters and setters omitted
+}
+----
+====
+
+Note that the domain type shown in the preceding example has a property named `id` of type `ObjectId`. The default serialization mechanism used in `MongoTemplate` (which backs the repository support) regards properties named `id` as the document ID. Currently, we support `String`, `ObjectId`, and `BigInteger` as ID types. Now that we have a domain object, we can define an interface that uses it, as follows:
+
+.Basic repository interface to persist Person entities
+====
+[source]
+----
+public interface PersonRepository extends PagingAndSortingRepository<Person, String> {
+
+  // additional custom query methods go here
+}
+----
+====
+
+Right now this interface serves only to provide type information, but we can add additional methods to it later. To do so, in your Spring configuration, add the following content:
+
+.General MongoDB repository Spring configuration
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+    http://www.springframework.org/schema/data/mongo
+    http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd">
+
+  <mongo:mongo-client id="mongoClient" />
+
+  <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+    <constructor-arg ref="mongoClient" />
+    <constructor-arg value="databaseName" />
+  </bean>
+
+  <mongo:repositories base-package="com.acme.*.repositories" />
+
+</beans>
+----
+====
+
+This namespace element causes the base packages to be scanned for interfaces that extend `MongoRepository` and create Spring beans for each one found. By default, the repositories get a `MongoTemplate` Spring bean wired that is called `mongoTemplate`, so you only need to configure `mongo-template-ref` explicitly if you deviate from this convention.
+
+If you would rather go with Java-based configuration, use the `@EnableMongoRepositories` annotation. That annotation carries the same attributes as the namespace element. If no base package is configured, the infrastructure scans the package of the annotated configuration class. The following example shows how to use Java configuration for a repository:
+
+.Java configuration for repositories
+====
+[source,java]
+----
+@Configuration
+@EnableMongoRepositories
+class ApplicationConfig extends AbstractMongoConfiguration {
+
+  @Override
+  protected String getDatabaseName() {
+    return "e-store";
+  }
+
+  @Override
+  public MongoClient mongoClient() {
+    return new MongoClient();
+  }
+
+  @Override
+  protected String getMappingBasePackage() {
+    return "com.oreilly.springdata.mongodb"
+  }
+}
+----
+====
+
+Because our domain repository extends `PagingAndSortingRepository`, it provides you with CRUD operations as well as methods for paginated and sorted access to the entities. Working with the repository instance is just a matter of dependency injecting it into a client. Consequently, accessing the second page of `Person` objects at a page size of 10 would resemble the following code:
+
+.Paging access to Person entities
+====
+[source,java]
+----
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration
+public class PersonRepositoryTests {
+
+    @Autowired PersonRepository repository;
+
+    @Test
+    public void readsFirstPageCorrectly() {
+
+      Page<Person> persons = repository.findAll(PageRequest.of(0, 10));
+      assertThat(persons.isFirstPage(), is(true));
+    }
+}
+----
+====
+
+The preceding example creates an application context with Spring's unit test support, which performs annotation-based dependency injection into test cases. Inside the test method, we use the repository to query the datastore. We hand the repository a `PageRequest` instance that requests the first page of `Person` objects at a page size of 10.
+

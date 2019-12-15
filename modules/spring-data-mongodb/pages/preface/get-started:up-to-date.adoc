@@ -1,0 +1,5 @@
+include::page$attributes.adoc[]
+[[get-started:up-to-date]]
+== Following Development
+
+For information on the Spring Data Mongo source code repository, nightly builds, and snapshot artifacts, see the Spring Data Mongo http://projects.spring.io/spring-data-mongodb/[homepage]. You can help make Spring Data best serve the needs of the Spring community by interacting with developers through the Community on http://stackoverflow.com/questions/tagged/spring-data[Stack Overflow]. To follow developer activity, look for the mailing list information on the Spring Data Mongo https://projects.spring.io/spring-data-mongodb/[homepage]. If you encounter a bug or want to suggest an improvement, please create a ticket on the Spring Data issue https://jira.spring.io/browse/DATAMONGO[tracker]. To stay up to date with the latest news and announcements in the Spring eco system, subscribe to the Spring Community http://spring.io[Portal]. You can also follow the Spring http://spring.io/blog[blog] or the project team on Twitter (http://twitter.com/SpringData[SpringData]).

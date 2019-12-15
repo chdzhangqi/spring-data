@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[new-features.1-10-0]]
+== What's New in Spring Data MongoDB 1.10
+* Compatible with MongoDB Server 3.4 and the MongoDB Java Driver 3.4.
+* New annotations for `@CountQuery`, `@DeleteQuery`, and `@ExistsQuery`.
+* Extended support for MongoDB 3.2 and MongoDB 3.4 aggregation operators (see xref:mongo.core:mongo.aggregation.adoc#mongo.aggregation.supported-aggregation-operations[mongo.aggregation.supported-aggregation-operations]).
+* Support for partial filter expression when creating indexes.
+* Publishing lifecycle events when loading or converting `DBRef` instances.
+* Added any-match mode for Query By Example.
+* Support for `$caseSensitive` and `$diacriticSensitive` text search.
+* Support for GeoJSON Polygon with hole.
+* Performance improvements by bulk-fetching `DBRef` instances.
+* Multi-faceted aggregations using `$facet`, `$bucket`, and `$bucketAuto` with `Aggregation`.
+

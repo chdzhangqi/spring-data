@@ -1,0 +1,100 @@
+include::page$attributes.adoc[]
+[[mongo.reactive.template]]
+== Introduction to `ReactiveMongoTemplate`
+
+The `ReactiveMongoTemplate` class, located in the `org.springframework.data.mongodb` package, is the central class of the Spring's Reactive MongoDB support and provides a rich feature set to interact with the database. The template offers convenience operations to create, update, delete, and query for MongoDB documents and provides a mapping between your domain objects and MongoDB documents.
+
+NOTE: Once configured, `ReactiveMongoTemplate` is thread-safe and can be reused across multiple instances.
+
+The mapping between MongoDB documents and domain classes is done by delegating to an implementation of the `MongoConverter` interface. Spring provides a default implementation with `MongoMappingConverter`, but you can also write your own converter. See the xref:mongo.core:mongo.custom-converters.adoc#mongo.custom-converters[section on `MongoConverter` instances] for more detailed information.
+
+The `ReactiveMongoTemplate` class implements the `ReactiveMongoOperations` interface. As much as possible, the methods on `ReactiveMongoOperations` mirror methods available on the MongoDB driver `Collection` object, to make the API familiar to existing MongoDB developers who are used to the driver API. For example, you can find methods such as `find`, `findAndModify`, `findOne`, `insert`, `remove`, `save`, `update`, and `updateMulti`. The design goal is to make it as easy as possible to transition between the use of the base MongoDB driver and `ReactiveMongoOperations`. A major difference between the two APIs is that `ReactiveMongoOperations` can be passed domain objects instead of `Document`, and there are fluent APIs for `Query`, `Criteria`, and `Update` operations instead of populating a `Document` to specify the parameters for those operations.
+
+NOTE: The preferred way to reference the operations on `ReactiveMongoTemplate` instance is through its `ReactiveMongoOperations` interface.
+
+The default converter implementation used by `ReactiveMongoTemplate` is `MappingMongoConverter`. While the `MappingMongoConverter` can use additional metadata to specify the mapping of objects to documents, it can also convert objects that contain no additional metadata by using some conventions for the mapping of IDs and collection names. These conventions as well as the use of mapping annotations are explained in the xref:mapping-chapter:mapping-chapter.adoc#mapping-chapter[Mapping chapter].
+
+Another central feature of `ReactiveMongoTemplate` is exception translation of exceptions thrown in the MongoDB Java driver into Spring's portable Data Access Exception hierarchy. See the section on xref:mongo.core:mongo.exception.adoc#mongo.exception[exception translation] for more information.
+
+There are many convenience methods on `ReactiveMongoTemplate` to help you easily perform common tasks. However, if you need to access the MongoDB driver API directly to access functionality not explicitly exposed by the MongoTemplate, you can use one of several `execute` callback methods to access underlying driver APIs. The `execute` callbacks give you a reference to either a `com.mongodb.reactivestreams.client.MongoCollection` or a `com.mongodb.reactivestreams.client.MongoDatabase` object. See xref:mongo.reactive:mongo.reactive.executioncallback.adoc#mongo.reactive.executioncallback[Execution Callbacks] for more information.
+
+[[mongo.reactive.template.instantiating]]
+=== Instantiating ReactiveMongoTemplate
+
+You can use Java to create and register an instance of `ReactiveMongoTemplate`, as follows:
+
+.Registering a `com.mongodb.reactivestreams.client.MongoClient` object and enabling Spring's exception translation support
+====
+[source,java]
+----
+@Configuration
+public class AppConfig {
+
+  public @Bean MongoClient reactiveMongoClient() {
+      return MongoClients.create("mongodb://localhost");
+  }
+
+  public @Bean ReactiveMongoTemplate reactiveMongoTemplate() {
+      return new ReactiveMongoTemplate(reactiveMongoClient(), "mydatabase");
+  }
+}
+----
+====
+
+There are several overloaded constructors of `ReactiveMongoTemplate`, including:
+
+* `ReactiveMongoTemplate(MongoClient mongo, String databaseName)`: Takes the `com.mongodb.MongoClient` object and the default database name to operate against.
+* `ReactiveMongoTemplate(ReactiveMongoDatabaseFactory mongoDatabaseFactory)`: Takes a `ReactiveMongoDatabaseFactory` object that encapsulated the `com.mongodb.reactivestreams.client.MongoClient` object and database name.
+* `ReactiveMongoTemplate(ReactiveMongoDatabaseFactory mongoDatabaseFactory, MongoConverter mongoConverter)`: Adds a `MongoConverter` to use for mapping.
+
+When creating a `ReactiveMongoTemplate`, you might also want to set the following properties:
+
+* `WriteResultCheckingPolicy`
+* `WriteConcern`
+* `ReadPreference`
+
+NOTE: The preferred way to reference the operations on `ReactiveMongoTemplate` instance is through its `ReactiveMongoOperations` interface.
+
+
+[[mongo.reactive.template.writeresultchecking]]
+=== `WriteResultChecking` Policy
+
+When in development, it is handy to either log or throw an `Exception` if the `com.mongodb.WriteResult` returned from any MongoDB operation contains an error. It is quite common to forget to do this during development and then end up with an application that looks like it runs successfully when, in fact, the database was not modified according to your expectations. Set the `MongoTemplate` `WriteResultChecking` property to an enum with the following values, `LOG`, `EXCEPTION`, or `NONE` to either log the error, throw and exception or do nothing. The default is to use a `WriteResultChecking` value of `NONE`.
+
+
+[[mongo.reactive.template.writeconcern]]
+=== `WriteConcern`
+
+If it has not yet been specified through the driver at a higher level (such as `MongoDatabase`), you can set the `com.mongodb.WriteConcern` property that the `ReactiveMongoTemplate` uses for write operations. If ReactiveMongoTemplate's `WriteConcern` property is not set, it defaults to the one set in the MongoDB driver's `MongoDatabase` or `MongoCollection` setting.
+
+
+[[mongo.reactive.template.writeconcernresolver]]
+=== `WriteConcernResolver`
+
+For more advanced cases where you want to set different `WriteConcern` values on a per-operation basis (for remove, update, insert, and save operations), a strategy interface called `WriteConcernResolver` can be configured on `ReactiveMongoTemplate`. Since `ReactiveMongoTemplate` is used to persist POJOs, the `WriteConcernResolver` lets you create a policy that can map a specific POJO class to a `WriteConcern` value. The following listing shows the `WriteConcernResolver` interface:
+
+[source,java]
+----
+public interface WriteConcernResolver {
+  WriteConcern resolve(MongoAction action);
+}
+----
+
+The argument, `MongoAction`, determines the `WriteConcern` value to be used and whether to use the value of the template itself as a default. `MongoAction` contains the collection name being written to, the `java.lang.Class` of the POJO, the converted `DBObject`, the operation as a value from the `MongoActionOperation` enumeration (one of `REMOVE`, `UPDATE`, `INSERT`, `INSERT_LIST`, and `SAVE`), and a few other pieces of contextual information. The following example shows how to create a `WriteConcernResolver`:
+
+[source]
+----
+private class MyAppWriteConcernResolver implements WriteConcernResolver {
+
+  public WriteConcern resolve(MongoAction action) {
+    if (action.getEntityClass().getSimpleName().contains("Audit")) {
+      return WriteConcern.NONE;
+    } else if (action.getEntityClass().getSimpleName().contains("Metadata")) {
+      return WriteConcern.JOURNAL_SAFE;
+    }
+    return action.getDefaultWriteConcern();
+  }
+}
+----
+
+

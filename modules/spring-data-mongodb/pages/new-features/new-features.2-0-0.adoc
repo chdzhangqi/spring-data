@@ -1,0 +1,16 @@
+include::page$attributes.adoc[]
+[[new-features.2-0-0]]
+== What's New in Spring Data MongoDB 2.0
+* Upgrade to Java 8.
+* Usage of the `Document` API, instead of `DBObject`.
+* xref:mongo.reactive:mongo.reactive.adoc#mongo.reactive[mongo.reactive].
+* <<mongo.reactive.repositories.infinite-streams,Tailable Cursor>> queries.
+* Support for aggregation result streaming by using Java 8 `Stream`.
+* xref:mongo.core:mongo.query.adoc#mongo.query.fluent-template-api[Fluent Collection API] for CRUD and aggregation operations.
+* Kotlin extensions for Template and Collection APIs.
+* Integration of collations for collection and index creation and query operations.
+* Query-by-Example support without type matching.
+* Support for isolation `Update` operations.
+* Tooling support for null-safety by using Spring's `@NonNullApi` and `@Nullable` annotations.
+* Deprecated cross-store support and removed Log4j appender.
+

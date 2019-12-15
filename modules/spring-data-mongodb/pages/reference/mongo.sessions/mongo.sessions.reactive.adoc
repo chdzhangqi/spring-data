@@ -1,0 +1,43 @@
+include::page$attributes.adoc[]
+[[mongo.sessions.reactive]]
+== Reactive `ClientSession` support
+
+The reactive counterpart uses the same building blocks as the imperative one, as the following example shows:
+
+.ClientSession with `ReactiveMongoOperations`
+====
+[source,java]
+----
+ClientSessionOptions sessionOptions = ClientSessionOptions.builder()
+    .causallyConsistent(true)
+    .build();
+
+Publisher<ClientSession> session = client.startSession(sessionOptions); <1>
+
+template.withSession(session)
+    .execute(action -> {
+
+        Query query = query(where("name").is("Durzo Blint"));
+        return action.findOne(query, Person.class)
+            .flatMap(durzo -> {
+
+                Person azoth = new Person("Kylar Stern");
+                azoth.setMaster(durzo);
+
+                return action.insert(azoth);                            <2>
+            });
+    }, ClientSession::close)                                            <3>
+    .subscribe();                                                       <4>
+----
+<1> Obtain a `Publisher` for new session retrieval.
+<2> Use `ReactiveMongoOperation` methods as before. The `ClientSession` is obtained and applied automatically.
+<3> Make sure to close the `ClientSession`.
+<4> Nothing happens until you subscribe. See http://projectreactor.io/docs/core/release/reference/#reactive.subscribe[the Project Reactor Reference Guide] for details.
+====
+
+By using a `Publisher` that provides the actual session, you can defer session acquisition to the point of actual subscription.
+Still, you need to close the session when done, so as to not pollute the server with stale sessions. Use the `doFinally` hook on `execute` to call `ClientSession#close()` when you no longer need the session.
+If you prefer having more control over the session itself, you can obtain the `ClientSession` through the driver and provide it through a `Supplier`.
+
+NOTE: Reactive use of `ClientSession` is limited to Template API usage. There's currently no session integration with reactive repositories.
+

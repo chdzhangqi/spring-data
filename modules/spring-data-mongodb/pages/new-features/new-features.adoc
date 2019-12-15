@@ -1,0 +1,4 @@
+include::page$attributes.adoc[]
+[[new-features]]
+= New & Noteworthy
+
