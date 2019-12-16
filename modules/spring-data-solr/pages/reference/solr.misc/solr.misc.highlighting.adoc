@@ -1,0 +1,35 @@
+include::page$attributes.adoc[]
+[[solr.misc.highlighting]]
+== Highlighting
+
+To highlight matches in search result add `HighlightOptions` to the `SimpleHighlightQuery`. Providing `HighlightOptions` without any further attributes will highlight apply highlighting on all fields within a `SolrDocument`.  NOTE: Field specific highlight parameters can be set by adding `FieldWithHighlightParameters` to `HighlightOptions`.
+
+====
+[source,java]
+----
+SimpleHighlightQuery query = new SimpleHighlightQuery(new SimpleStringCriteria("name:with"));
+query.setHighlightOptions(new HighlightOptions());
+HighlightPage<Product> page = solrTemplate.queryForHighlightPage(query, Product.class);
+----
+====
+
+Not all parameters are available via setters/getters but can be added directly.
+
+====
+[source,java]
+----
+SimpleHighlightQuery query = new SimpleHighlightQuery(new SimpleStringCriteria("name:with"));
+query.setHighlightOptions(new HighlightOptions().addHighlightParameter("hl.bs.country", "at"));
+----
+====
+
+In order to apply Highlighting to derived queries use `@Highlight`. If no `fields` are defined highlighting will be aplied on all fields.
+
+====
+[source,java]
+----
+@Highlight(prefix = "<b>", postfix = "</b>")
+HighlightPage<Product> findByName(String name, Pageable page);
+----
+====
+

@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[solr.misc.requesthandler]]
+== Select Request Handler
+
+Select the request handler via `qt` Parameter directly in `Query` or add `@Query` to your method signature.
+
+====
+[source,java]
+----
+@Query(requestHandler = "/instock")
+Page<Product> findByNameOrDescription(String name, String description);
+----
+====
+

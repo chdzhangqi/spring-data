@@ -1,0 +1,15 @@
+include::page$attributes.adoc[]
+[[solr.misc.timeAllowed]]
+== Time allowed for a search
+
+It it possible to set the time allowed for a search to finish. This value only applies to the search and not to requests in general. Time is in milliseconds. Values less than or equal to zero implies no time restriction. Partial results may be returned, if there are any.
+
+====
+[source,java]
+----
+Query query = new SimpleQuery(new SimpleStringCriteria("field_1:value_1"));
+// Allowing maximum of 100ms for this search
+query.setTimeAllowed(100);
+----
+====
+

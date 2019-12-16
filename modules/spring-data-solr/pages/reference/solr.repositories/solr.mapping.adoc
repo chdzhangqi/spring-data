@@ -1,0 +1,96 @@
+include::page$attributes.adoc[]
+[[solr.mapping]]
+== Document Mapping
+
+Though there is already support for Entity Mapping within SolrJ, Spring Data Solr ships with its own mapping mechanism shown in the following section. NOTE: DocumentObjectBinder has superior performance. Therefore usage is recommended if there is not need for custom type mapping. You can switch to DocumentObjectBinder by registering SolrJConverter within SolrTemplate.
+
+[[solr.mapping.mappingSolr]]
+=== Mapping Solr Converter
+
+`MappingSolrConverter` allows you to register custom converters for your `SolrDocument` and `SolrInputDocument` as well as for other types nested within your beans. The Converter is not 100% compartible with `DocumentObjectBinder` and `@Indexed` has to be added with `readonly=true` to ignore fields from beeing written to solr.
+
+.Sample Document Mapping
+====
+[source]
+----
+public class Product {
+  @Field
+  private String simpleProperty;
+  
+  @Field("somePropertyName")
+  private String namedPropery;
+  
+  @Field
+  private List<String> listOfValues;
+  
+  @Indexed(readonly = true)
+  @Field("property_*")
+  private List<String> ignoredFromWriting;
+  
+  @Field("mappedField_*")
+  private Map<String, List<String>> mappedFieldValues; 
+  
+  @Dynamic
+  @Field("dynamicMappedField_*")
+  private Map<String, String> dynamicMappedFieldValues; 
+  
+  @Field
+  private GeoLocation location;
+				
+}
+----
+====
+
+Taking a look as the above `MappingSolrConverter` will do as follows: 
+
+[cols="1,3", options="header"]
+|===
+| Property
+| Write Mapping| simpleProperty
+| `<field name="simpleProperty">value</field>`
+
+| namedPropery
+| `<field name="somePropertyName">value</field>`
+
+| listOfValues
+| `<field name="listOfValues">value 1</field>` `<field name="listOfValues">value 2</field>` `<field name="listOfValues">value 3</field>`
+
+| ignoredFromWriting
+| `//not written to document`
+
+| mappedFieldValues
+| `<field name="mapentry[0].key">mapentry[0].value[0]</field>` `<field name="mapentry[0].key">mapentry[0].value[1]</field>` `<field name="mapentry[1].key">mapentry[1].value[0]</field>`
+
+| dynamicMappedFieldValues
+| `<field name="'dynamicMappedField_' + mapentry[0].key">mapentry[0].value[0]</field>` `<field name="'dynamicMappedField_' + mapentry[0].key">mapentry[0].value[1]</field>` `<field name="'dynamicMappedField_' + mapentry[1].key">mapentry[1].value[0]</field>`
+
+| location
+| `<field name="location">48.362893,14.534437</field>`
+|===
+
+To register a custom converter one must add `CustomConversions` to `SolrTemplate` initializing it with own `Converter` implementation. 
+
+====
+[source]
+----
+<bean id="solrConverter" class="org.springframework.data.solr.core.convert.MappingSolrConverter">
+	<constructor-arg>
+		<bean class="org.springframework.data.solr.core.mapping.SimpleSolrMappingContext" />
+	</constructor-arg>
+	<property name="customConversions" ref="customConversions" />
+</bean> 
+
+<bean id="customConversions" class="org.springframework.data.solr.core.convert.CustomConversions">
+	<constructor-arg>
+		<list>
+			<bean class="com.acme.MyBeanToSolrInputDocumentConverter" />
+		</list>
+	</constructor-arg>
+</bean>
+
+<bean id="solrTemplate" class="org.springframework.data.solr.core.SolrTemplate">
+	<constructor-arg ref="solrClient" />
+	<property name="solrConverter" ref="solrConverter" />
+</bean>
+----
+====

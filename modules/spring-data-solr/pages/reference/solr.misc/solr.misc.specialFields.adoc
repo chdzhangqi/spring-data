@@ -1,0 +1,26 @@
+include::page$attributes.adoc[]
+[[solr.misc.specialFields]]
+== Special Fields
+
+=== @Score
+
+In order to load score information of a query result, a field annotated with `@Score` annotation could be added, indicating the property holding the documents score.
+
+NOTE: The score property needs to be numerical and can only appear once per document.
+
+====
+[source,java]
+----
+public class MyEntity {
+
+    @Id
+    private String id;
+    
+    @Score
+    private Float score;
+    
+    // setters and getters ...
+
+}	            
+----
+====

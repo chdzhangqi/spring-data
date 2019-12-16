@@ -1,0 +1,11 @@
+include::page$attributes.adoc[]
+[preface]
+== Project Metadata
+
+* Version Control - https://github.com/spring-projects/spring-data-solr
+* Bugtacker - https://jira.spring.io/browse/DATASOLR
+* Release repository - https://repo.spring.io/libs-release
+* Milestone repository - https://repo.spring.io/libs-milestone
+* Snapshot repository - https://repo.spring.io/libs-snapshot
+
+[[requirements]]

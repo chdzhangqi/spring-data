@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+= Preface
+
+The Spring Data Solr project applies core Spring concepts to the development of solutions using the Apache Solr Search Engine. We provide a "template" as a high-level abstraction for storing and querying documents. You will notice similarities to the mongodb support in the Spring Framework.
+
+[[project]]

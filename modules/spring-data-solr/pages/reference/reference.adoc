@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[reference]]
+= Reference Documentation
+
+:leveloffset: -1
+

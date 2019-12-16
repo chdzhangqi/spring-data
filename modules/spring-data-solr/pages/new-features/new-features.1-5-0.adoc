@@ -1,0 +1,7 @@
+include::page$attributes.adoc[]
+[[new-features.1-5-0]]
+== What's new in Spring Data for Apache Solr 1.5
+
+* Support for xref:solr.misc:solr.misc.faceting.adoc#solr.misc.faceting.range[solr.misc.faceting.range].
+* Automatically prefix/suffix map keys via `@Dynamic` (See: _dynamicMappedFieldValues_ in xref:solr.repositories:solr.mapping.adoc#solr.mapping.mappingSolr[solr.mapping.mappingSolr]).
+

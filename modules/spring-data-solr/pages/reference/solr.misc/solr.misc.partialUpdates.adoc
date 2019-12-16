@@ -1,0 +1,15 @@
+include::page$attributes.adoc[]
+[[solr.misc.partialUpdates]]
+== Partial Updates
+
+PartialUpdates can be done using `PartialUpdate` which implements `Update`.
+
+====
+[source,java]
+----
+PartialUpdate update = new PartialUpdate("id", "123");
+update.add("name", "updated-name");
+solrTemplate.saveBean(update);
+----
+====
+

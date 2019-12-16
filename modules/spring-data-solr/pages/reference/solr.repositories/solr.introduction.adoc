@@ -1,0 +1,192 @@
+include::page$attributes.adoc[]
+[[solr.introduction]]
+== Introduction
+
+[[solr.namespace]]
+=== Spring Namespace
+
+The Spring Data Solr module contains a custom namespace allowing definition of repository beans as well as elements for instantiating a `SolrClient` .
+
+Using the `repositories` element looks up Spring Data repositories as described in xref:repositories:repositories.create-instances.adoc#repositories.create-instances[repositories.create-instances] .
+
+.Setting up Solr repositories using Namespace
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:solr="http://www.springframework.org/schema/data/solr"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/data/solr
+    http://www.springframework.org/schema/data/solr/spring-solr.xsd">
+
+  <solr:repositories base-package="com.acme.repositories" />
+</beans>
+----
+====
+
+Using the `solr-server` or `embedded-solr-server` element registers an instance of `SolrClient` in the context. 
+
+.HttpSolrClient using Namespace
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:solr="http://www.springframework.org/schema/data/solr"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/data/solr
+    http://www.springframework.org/schema/data/solr/spring-solr.xsd">
+
+  <solr:solr-client id="solrClient" url="http://locahost:8983/solr" />
+</beans> 
+----
+====
+
+.LBSolrClient using Namespace
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:solr="http://www.springframework.org/schema/data/solr"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/data/solr
+    http://www.springframework.org/schema/data/solr/spring-solr.xsd">
+
+  <solr:solr-client id="solrClient" url="http://locahost:8983/solr,http://localhost:8984/solr" />
+</beans> 
+----
+====
+
+.EmbeddedSolrServer using Namespace
+====
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:solr="http://www.springframework.org/schema/data/solr"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/data/solr
+    http://www.springframework.org/schema/data/solr/spring-solr.xsd">
+
+  <solr:embedded-solr-server id="solrClient" solrHome="classpath:com/acme/solr" />
+</beans> 
+----
+====
+
+[[solr.annotation]]
+=== Annotation based configuration
+
+The Spring Data Solr repositories support cannot only be activated through an XML namespace but also using an annotation through JavaConfig.
+
+.Spring Data Solr repositories using JavaConfig
+====
+[source,java]
+----
+@Configuration
+@EnableSolrRepositories
+class ApplicationConfig {
+  
+  @Bean
+  public SolrClient solrClient() {
+    EmbeddedSolrServerFactory factory = new EmbeddedSolrServerFactory("classpath:com/acme/solr");
+    return factory.getSolrServer();
+  }
+  
+  @Bean
+  public SolrOperations solrTemplate() {
+    return new SolrTemplate(solrClient());
+  }
+}
+----
+====
+
+The configuration above sets up an `EmbeddedSolrServer` which is used by the `SolrTemplate` . Spring Data Solr Repositories are activated using the `@EnableSolrRepositories` annotation, which essentially carries the same attributes as the XML namespace does. If no base package is configured, it will use the one the configuration class resides in.
+
+[[solr.multicore]]
+=== Multicore Support
+
+Solr handles different collections within one core. Use `MulticoreSolrClientFactory` to create separate `SolrClient` for each core.
+
+.Multicore Configuration
+====
+[source,java]
+----
+@Configuration
+@EnableSolrRepositories(multicoreSupport = true)
+class ApplicationConfig {
+
+  private static final String PROPERTY_NAME_SOLR_SERVER_URL = "solr.host";
+
+  @Resource
+  private Environment environment;
+  
+  @Bean
+  public SolrClient solrClient() {
+    return new HttpSolrClient(environment.getRequiredProperty(PROPERTY_NAME_SOLR_SERVER_URL));
+  }
+  
+}
+----
+====
+
+[[solr.cdi]]
+=== Solr Repositores using CDI
+
+The Spring Data Solr repositories can also be set up using CDI functionality.
+
+.Spring Data Solr repositories using JavaConfig
+====
+[source,java]
+----
+class SolrTemplateProducer {
+
+  @Produces
+  @ApplicationScoped
+  public SolrOperations createSolrTemplate() {
+    return new SolrTemplate(new EmbeddedSolrServerFactory("classpath:com/acme/solr"));
+  }
+}
+
+class ProductService {
+
+  private ProductRepository repository;
+
+  public Page<Product> findAvailableProductsByName(String name, Pageable pageable) {
+    return repository.findByAvailableTrueAndNameStartingWith(name, pageable);
+  }
+
+  @Inject
+  public void setRepository(ProductRepository repository) {
+    this.repository = repository;
+  }
+}
+----
+====
+
+[[solr.transactions]]
+=== Transaction Support
+
+Solr supports transactions on server level means create, updaet, delete actions since the last commit/optimize/rollback are queued on the server and committed/optimized/rolled back at once. Spring Data Solr Repositories will participate in Spring Managed Transactions and commit/rollback changes on complete.
+
+====
+[source,java]
+----
+@Transactional
+public Product save(Product product) {
+  Product savedProduct = jpaRepository.save(product);
+  solrRepository.save(savedProduct);
+  return savedProduct;
+}
+----
+====
+

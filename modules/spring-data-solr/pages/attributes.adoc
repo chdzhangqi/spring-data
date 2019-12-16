@@ -1,0 +1,4 @@
+:revnumber: {version}
+:revdate: {localdate}
+:spring-framework-docs: https://docs.spring.io/spring/docs/{springVersion}/spring-framework-reference
+:spring-framework-javadoc: https://docs.spring.io/spring/docs/{springVersion}/javadoc-api

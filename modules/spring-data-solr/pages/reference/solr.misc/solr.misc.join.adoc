@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[solr.misc.join]]
+== Using Join
+
+Join attributes within one solr core by defining `Join` attribute of `Query`. NOTE: Join is not available prior to solr 4.x.
+
+====
+[source,java]
+----
+SimpleQuery query = new SimpleQuery(new SimpleStringCriteria("text:ipod"));
+query.setJoin(Join.from("manu_id_s").to("id"));
+----
+====
+

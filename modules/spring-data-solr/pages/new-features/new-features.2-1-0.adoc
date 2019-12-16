@@ -1,0 +1,9 @@
+include::page$attributes.adoc[]
+[[new-features.2-1-0]]
+== What's new in Spring Data for Apache Solr 2.1
+* Autoselect Solr core using `SolrTemplate`.
+* Assert upwards compatibility with Apache Solr 6 (incl. 6.3).
+* Support for combined `Facet` and `Highlight` Query.
+* Allow reading single valued multivalue fields into non collection property.
+* Use native SolrJ schema api.
+

@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[new-features.2-0-0]]
+== What's new in Spring Data for Apache Solr 2.0
+* Upgrade to Apache Solr 5.
+* Support `RequestMethod` when querying.
+

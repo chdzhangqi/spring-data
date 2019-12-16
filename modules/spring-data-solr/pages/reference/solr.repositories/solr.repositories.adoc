@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[solr.repositories]]
+= Solr Repositories
+
+This chapter includes details of the Solr repository implementation.
+

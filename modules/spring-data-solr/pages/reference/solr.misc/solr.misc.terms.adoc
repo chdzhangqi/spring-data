@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[solr.misc.terms]]
+== Terms
+
+Terms Vector cannot directly be used within `SolrRepository` but can be applied via `SolrTemplate`. Please mind, that the result will be a `TermsPage`.
+
+====
+[source,java]
+----
+TermsQuery query = SimpleTermsQuery.queryBuilder().fields("name").build();
+TermsPage page = solrTemplate.queryForTermsPage(query);		
+----
+====
+

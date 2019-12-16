@@ -1,0 +1,58 @@
+include::page$attributes.adoc[]
+[[solr.misc.functions]]
+== Using Functions
+
+Solr supports several functional expressions within queries. Followig functions are supported out of the box. Custom functions can be added by implementing `Function` 
+
+[cols="1,2", options="header"]
+.Functions
+|===
+| Class
+| Solr Function| `CurrencyFunction`
+| `currency(field_name,[CODE])`
+
+| `DefaultValueFunction`
+| `def(field\|function,defaultValue)`
+
+| `DistanceFunction`
+| `dist(power, pointA, pointB)`
+
+| `DivideFunction`
+| `div(x,y)`
+
+| `ExistsFunction`
+| `exists(field\|function)`
+
+| `GeoDistanceFunction`
+| `geodist(sfield, latitude, longitude)`
+
+| `GeoHashFunction`
+| `geohash(latitude, longitude)`
+
+| `IfFunction`
+| `if(value\|field\|function,trueValue,falseValue)`
+
+| `MaxFunction`
+| `max(field\|function,value)`
+
+| `NotFunction`
+| `not(field\|function)`
+
+| `ProductFunction`
+| `product(x,y,...)`
+
+| `QueryFunction`
+| `query(x)`
+
+| `TermFrequencyFunction`
+| `termfreq(field,term)`
+|===
+
+====
+[source,java]
+----
+SimpleQuery query = new SimpleQuery(new SimpleStringCriteria("text:ipod"));
+query.addFilterQuery(new FilterQuery(Criteria.where(QueryFunction.query("name:sol*"))));
+----
+====
+

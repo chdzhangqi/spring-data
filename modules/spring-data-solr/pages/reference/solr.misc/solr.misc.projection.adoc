@@ -1,0 +1,14 @@
+include::page$attributes.adoc[]
+[[solr.misc.projection]]
+== Projection
+
+Projections can be applied via `@Query` using the fields value.
+
+====
+[source,java]
+----
+@Query(fields = { "name", "id" })
+List<ProductBean> findByNameStartingWith(String name);
+----
+====
+

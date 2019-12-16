@@ -1,0 +1,205 @@
+include::page$attributes.adoc[]
+[[solr.query-methods]]
+== Query methods
+
+[[solr.query-methods.finders]]
+=== Query lookup strategies
+
+The Solr module supports defining a query manually as String or have it being derived from the method name. NOTE: There is no QueryDSL Support present at this time.
+
+==== Declared queries
+
+Deriving the query from the method name is not always sufficient and/or may result in unreadable method names. In this case one might make either use of Solr named queries (see xref:solr.repositories:solr.query-methods.adoc#solr.query-methods.named-queries[solr.query-methods.named-queries] ) or use the `@Query` annotation (see xref:solr.repositories:solr.query-methods.adoc#solr.query-methods.at-query[solr.query-methods.at-query] ).
+
+[[solr.query-methods.criterions]]
+=== Query creation
+
+Generally the query creation mechanism for Solr works as described in xref:repositories:repositories.query-methods.adoc#repositories.query-methods[repositories.query-methods] . Here's a short example of what a Solr query method translates into: 
+
+.Query creation from method names
+====
+[source,java]
+----
+public interface ProductRepository extends Repository<Product, String> {
+  List<Product> findByNameAndPopularity(String name, Integer popularity);
+}
+----
+====
+
+The method name above will be translated into the following solr query
+
+[source]
+----
+q=name:?0 AND popularity:?1
+----
+
+A list of supported keywords for Solr is shown below. 
+
+[cols="1,2,3", options="header"]
+.Supported keywords inside method names
+|===
+| Keyword
+| Sample
+| Solr Query String| `And`
+| `findByNameAndPopularity`
+| `q=name:?0 AND popularity:?1`
+
+| `Or`
+| `findByNameOrPopularity`
+| `q=name:?0 OR popularity:?1`
+
+| `Is`
+| `findByName`
+| `q=name:?0`
+
+| `Not`
+| `findByNameNot`
+| `q=-name:?0`
+
+| `IsNull`
+| `findByNameIsNull`
+| `q=-name:[* TO *]`
+
+| `IsNotNull`
+| `findByNameIsNotNull`
+| `q=name:[* TO *]`
+
+| `Between`
+| `findByPopularityBetween`
+| `q=popularity:[?0 TO ?1]`
+
+| `LessThan`
+| `findByPopularityLessThan`
+| `q=popularity:[* TO ?0}`
+
+| `LessThanEqual`
+| `findByPopularityLessThanEqual`
+| `q=popularity:[* TO ?0]`
+
+| `GreaterThan`
+| `findByPopularityGreaterThan`
+| `q=popularity:{?0 TO *]`
+
+| `GreaterThanEqual`
+| `findByPopularityGreaterThanEqual`
+| `q=popularity:[?0 TO *]`
+
+| `Before`
+| `findByLastModifiedBefore`
+| `q=last_modified:[* TO ?0}`
+
+| `After`
+| `findByLastModifiedAfter`
+| `q=last_modified:{?0 TO *]`
+
+| `Like`
+| `findByNameLike`
+| `q=name:?0*`
+
+| `NotLike`
+| `findByNameNotLike`
+| `q=-name:?0*`
+
+| `StartingWith`
+| `findByNameStartingWith`
+| `q=name:?0*`
+
+| `EndingWith`
+| `findByNameEndingWith`
+| `q=name:*?0`
+
+| `Containing`
+| `findByNameContaining`
+| `q=name:*?0*`
+
+| `Matches`
+| `findByNameMatches`
+| `q=name:?0`
+
+| `In`
+| `findByNameIn(Collection<String>
+										names)`
+| `q=name:(?0... )`
+
+| `NotIn`
+| `findByNameNotIn(Collection<String>
+										names)`
+| `q=-name:(?0... )`
+
+| `Within`
+| `findByStoreWithin(Point, Distance)`
+| `q={!geofilt pt=?0.latitude,?0.longitude sfield=store
+										d=?1}`
+
+| `Near`
+| `findByStoreNear(Point, Distance)`
+| `q={!bbox pt=?0.latitude,?0.longitude sfield=store
+										d=?1}`
+
+| `Near`
+| `findByStoreNear(Box)`
+| `q=store[?0.start.latitude,?0.start.longitude TO
+										?0.end.latitude,?0.end.longitude]`
+
+| `True`
+| `findByAvailableTrue`
+| `q=inStock:true`
+
+| `False`
+| `findByAvailableFalse`
+| `q=inStock:false`
+
+| `OrderBy`
+| `findByAvailableTrueOrderByNameDesc`
+| `q=inStock:true&sort=name desc`
+|===
+
+NOTE: Collections types can be used along with 'Like', 'NotLike', 'StartingWith', 'EndingWith' and 'Containing'.
+
+[source,java]
+----
+Page<Product> findByNameLike(Collection<String> name);
+----
+
+[[solr.query-methods.at-query]]
+=== Using @Query Annotation
+
+Using named queries ( xref:solr.repositories:solr.query-methods.adoc#solr.query-methods.named-queries[solr.query-methods.named-queries] ) to declare queries for entities is a valid approach and works fine for a small number of queries. As the queries themselves are tied to the Java method that executes them, you actually can bind them directly using the Spring Data Solr `@Query` annotation.
+
+.Declare query at the method using the `@Query` annotation.
+====
+[source,java]
+----
+public interface ProductRepository extends SolrRepository<Product, String> {
+  @Query("inStock:?0")
+  List<Product> findByAvailable(Boolean available);
+}
+----
+====
+
+[[solr.query-methods.named-queries]]
+=== Using NamedQueries
+
+Named queries can be kept in a properties file and wired to the accroding method. Please mind the naming convention described in xref:repositories:repositories.query-methods.details.adoc#repositories.query-methods.query-lookup-strategies[repositories.query-methods.query-lookup-strategies] or use `@Query` .
+
+.Declare named query in properties file
+====
+[source]
+----
+Product.findByNamedQuery=popularity:?0
+Product.findByName=name:?0
+----
+====
+
+[source,java]
+----
+public interface ProductRepository extends SolrCrudRepository<Product, String> {
+				
+  List<Product> findByNamedQuery(Integer popularity);
+  
+  @Query(name = "Product.findByName")
+  List<Product> findByAnnotatedNamedQuery(String name); 
+  
+}
+----
+

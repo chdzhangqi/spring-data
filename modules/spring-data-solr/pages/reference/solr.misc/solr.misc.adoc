@@ -1,0 +1,6 @@
+include::page$attributes.adoc[]
+[[solr.misc]]
+= Miscellaneous Solr Operation Support
+
+This chapter covers additional support for Solr operations (such as faceting) that cannot be directly accessed via the repository interface. It is recommended to add those operations as custom implementation as described in xref:repositories:repositories.custom-implementations.adoc#repositories.custom-implementations[repositories.custom-implementations] .
+

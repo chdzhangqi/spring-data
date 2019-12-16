@@ -1,0 +1,26 @@
+include::page$attributes.adoc[]
+[[solr.misc.filter]]
+== Filter Query
+
+Filter Queries improve query speed and do not influence document score. It is recommended to implement geospatial search as filter query. NOTE: Please note that in solr, unless otherwise specified, all units of distance are kilometers and points are in degrees of latitude,longitude.
+
+====
+[source,java]
+----
+Query query = new SimpleQuery(new Criteria("category").is("supercalifragilisticexpialidocious"));
+FilterQuery fq = new SimpleFilterQuery(new Criteria("store")
+  .near(new Point(48.305478, 14.286699), new Distance(5)));
+query.addFilterQuery(fq);
+----
+====
+
+Simple filter queries can also be defined using `@Query` . NOTE: Using `@Query` allows you to define place holders which will use your input parameter as value.
+
+====
+[source,java]
+----
+@Query(value = "*:*", filters = { "inStock:true", "popularity:[* TO 3]" })
+List<Product> findAllFilterAvailableTrueAndPopularityLessThanEqual3();
+----
+====
+

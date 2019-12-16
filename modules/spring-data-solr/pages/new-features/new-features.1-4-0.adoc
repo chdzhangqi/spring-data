@@ -1,0 +1,9 @@
+include::page$attributes.adoc[]
+[[new-features.1-4-0]]
+== What's new in Spring Data for Apache Solr 1.4
+
+* Upgraded to recent Solr 4.10.x distribution (requires Java 7).
+* Add support for xref:solr.misc:solr.misc.functions.adoc#solr.misc.realtimeGet[solr.misc.realtimeGet].
+* Get xref:solr.misc:solr.misc.group.adoc#solr.misc.fieldStats[solr.misc.fieldStats] (max, min, sum, count, mean, missing, stddev and distinct calculations).
+* Use `@Score` to automatically add projection on document score (See: xref:solr.misc:solr.misc.realtimeGet.adoc#solr.misc.specialFields[solr.misc.specialFields]).
+

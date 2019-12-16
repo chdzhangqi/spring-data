@@ -1,0 +1,40 @@
+include::page$attributes.adoc[]
+[[solr.misc.boost]]
+== Boost document Score
+
+Boost document score in case of matching criteria to influence result order. This can be done by either setting boost on `Criteria` or using `@Boost` for derived queries.
+
+====
+[source,java]
+----
+Page<Product> findByNameOrDescription(@Boost(2) String name, String description);
+----
+====
+
+[[solr.misc.boost.index-time]]
+=== Index Time Boosts
+
+Boosting documents score can be done on index time by using `@SolrDocument` annotation on classes (for Solr documents) and/or `@Indexed` on fields (for Solr fields).
+
+====
+[source,java]
+----
+import org.apache.solr.client.solrj.beans.Field;
+import org.springframework.data.solr.repository.Boost;
+
+@SolrDocument(boost = 0.8f)
+public class MyEntity {
+
+    @Id
+    @Indexed
+    private String id;
+    
+    @Indexed(boost = 1.0f)
+    private String name;
+    
+    // setters and getters ...
+
+}	            
+----
+====
+
